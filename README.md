@@ -1,54 +1,93 @@
-# ShadowPath (Vigilante Urbano)
+# ＳＡＩＦＥＮ
+*System designation: Urban Risk Analysis Protocol.*
 
-Protótipo de aplicativo mobile/web com estética cyberpunk forte, inspirado em Watch Dogs, Cowboy Bebop e sci-fi noir. O objetivo do sistema é fornecer uma interface de navegação tática urbana voltada para segurança em grandes cidades brasileiras (focado em São Paulo).
-
----
-
-## 🚀 Como Executar
-
-1. Baixe os arquivos do repositório.
-2. Abra o arquivo `index.html` diretamente em seu navegador (ou utilize uma extensão como Live Server no VS Code).
+> **CLASSIFIED COMMUNICATION. AUTHORIZATION LEVEL 4 REQUIRED.**
+> 
+> *Notice: This repository and all its contents are strictly a test environment. The data contained herein is an experimental simulation. Do not attempt to extrapolate real-world patterns from this localized trial. You are being monitored.*
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## // INITIATION SEQUENCE
 
-- **HTML5 & CSS3 (Vanilla)**: Estrutura semântica e folha de estilos contendo variáveis para design system, animações customizadas e filtros de tela CRT.
-- **JavaScript (ES6)**: Lógica de inicialização de UI, manipulação de estados e controle do mapa.
-- **Leaflet.js & Leaflet.heat**: Biblioteca open-source para mapas interativos e geração de heatmap (mapa de calor) dinâmico de criminalidade.
+To access the simulation terminal:
 
----
+1. Clone the archive. Do not leave a trace.
+2. Initialize local server at root protocol:
+   ```bash
+   python3 -m http.server 8000
+   ```
+3. Access endpoint: `http://localhost:8000`
 
-## 🌟 Funcionalidades Implementadas
-
-1. **HUD e Estética Cyberpunk**:
-   - Efeitos visuais de Scanlines CRT, vinheta, textos com efeito glitch e brilhos neon.
-   - Design responsivo adaptado para dispositivos móveis com painel deslizante.
-2. **Mapa Tático Interativo (São Paulo)**:
-   - Fundo escuro estilizado e heatmap dinâmico com níveis de periculosidade customizados (Cracolândia, Sé, República, etc.).
-   - 30+ marcadores personalizados para estações de metrô, pontos de ônibus, câmeras de segurança, postos policiais e comércios 24h (pontos de escape).
-3. **Indicador de Ameaça Dinâmico**:
-   - Calcula a proximidade a zonas de risco em tempo real conforme o usuário navega pelo mapa, alterando o nível no HUD superior (BAIXO, MÉDIO, ALTO, CRÍTICO).
-4. **Modos e Ações do Operador**:
-   - **Scan Rápido**: Animação de radar que analisa e quantifica ameaças no perímetro.
-   - **Modo Fantasma (Stealth)**: Altera a tonalidade visual do aplicativo e o status do operador para reduzir rastreamento.
-   - **Alertar Amigos**: Dispara um SOS visual e simula o envio de localização para contatos de emergência.
-   - **Rotas Seguras**: Destaca caminhos alternativos mais iluminados e policiados no mapa usando polilinhas neon pulsantes.
-5. **Feed de Alertas e Contexto**:
-   - Log lateral atualizado dinamicamente com novos alertas simulados da cidade.
-   - Análise contextual gerada por "Inteligência Artificial" com efeito de digitação.
+> *WARNING: Direct `index.html` execution will result in an immediate connection drop. ES6 module protocols require an active HTTP server. Do not bypass.*
 
 ---
 
-## 🧠 Aprendizados do Projeto
+## // VISUAL OVERRIDE (Context 4)
 
-Durante a criação do ShadowPath, foram explorados e consolidados diversos conceitos de desenvolvimento frontend moderno:
+Interface mimics legacy CRT monitoring systems. 
 
-- **Customização Avançada de Mapas**: Como utilizar e estilizar o Leaflet de forma a fugir do padrão geográfico comum, transformando mapas reais em interfaces de jogos (HUD).
-- **Tratamento de Mapas de Calor (Heatmaps)**: Implementação prática de arrays de dados geográficos com pesos de intensidade para renderização de gradientes táticos.
-- **CSS Avançado e Efeitos Visuais**:
-  - Uso de gradientes repetidos e animações de posição para criar scanlines dinâmicos.
-  - Implementação de filtros (brightness, saturate, hue-rotate) manipulados via JS para criar transições suaves de modos como o "Modo Fantasma".
-  - Manipulação de variáveis CSS (`--variables`) para alterar dinamicamente o tema visual do sistema em tempo real.
-- **Animações de Performance**: Uso de keyframes CSS eficientes para efeitos de radar/scan e transições de painéis deslizantes responsivos (com uso de `transform: translate` em vez de alterar dimensões de largura).
-- **Tipografia e Imersão**: Utilização combinada de fontes monoespaçadas e de exibição (`Share Tech Mono`, `Orbitron`, `JetBrains Mono`) com técnicas de simulação de terminal para criar uma narrativa de interface interativa (Onboarding/Boot sequence).
+- **Primary Signature:** Phosphor Green (`#00FF9F` / `#39FF14`) against absolute black.
+- **Typography:** Share Tech Mono + VT323.
+- **Artifacts:** Scanlines, subtle grids, phosphor glow. No saturated neon.
+- **Tone:** Analytical. Cold. Factual. No gamification protocols.
+
+---
+
+## // CAPABILITIES
+
+### RISK ANALYSIS
+- **Dynamic Risk Levels** — Computed in real-time. We see where you look.
+- **Demographic Vulnerability** — Identifies target profiles per sector and timestamp.
+- **Automated Intelligence** — Auto-generated threat assessments based on variables.
+
+### PARAMETER FILTERS
+- **Incident Types:** Theft, Robbery, Assault, Aggression, Trafficking.
+- **Temporal Slices:** Morning, Afternoon, Night, Late Night.
+- **Sectors:** Sé, República, Luz, Paulista, Liberdade, Bela Vista, Consolação, Anhangabaú.
+
+### TACTICAL LAYERS
+- **Incident Heatmap** — Intensity dictates risk.
+- **24/7 Safe Zones** — Monitored locations.
+- **Entity Flow** — Pedestrian density overlays.
+- **Illumination Grid** — Visibility mapping for night operations.
+- **Transit Networks** — Active transport links and final departure times.
+- **Verified Routes** — Secure paths confirmed by operatives.
+
+---
+
+## // ARCHITECTURE
+
+```
+js/
+├── main.js                  # Entry point
+├── core/
+│   └── App.js               # Core Orchestrator
+├── data/
+│   └── MockData.js          # Simulated coordinates (Test Data)
+├── map/
+│   ├── CrimeMap.js          # Heatmap rendering
+│   ├── MarkerManager.js     # Tactical POIs
+│   ├── RouteManager.js      # Pathfinding
+│   ├── LayerManager.js      # Layer toggles
+│   ├── FlowLayer.js         # Entity density
+│   └── LightingLayer.js     # Illumination grid
+└── ui/
+    ├── BootScreen.js         # CRT Initialization sequence
+    ├── AlertSystem.js        # Threat notification feed
+    ├── FilterSystem.js       # Variable controllers
+    ├── HUDController.js      # Heads-Up Display
+    └── RiskAnalyzer.js       # Threat calculation engine
+```
+
+---
+
+## // SYSTEM REQUIREMENTS
+
+- **Core:** HTML5 / CSS3 / JavaScript ES6 Modules. No external frameworks.
+- **Cartography:** Leaflet.js with Dark No Labels tile server.
+- **Heat Mapping:** Leaflet.heat.
+- **Typography Engine:** Google Fonts.
+
+---
+
+*End of transmission. Disconnect immediately after reading.*
