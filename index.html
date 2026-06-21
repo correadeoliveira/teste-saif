@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ShadowPath | Vigilante Urbano</title>
+    <meta name="description" content="ShadowPath — Sistema cyberpunk de vigilância urbana para navegação segura em grandes cidades brasileiras.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- CRT Scan Lines Overlay -->
+    <div class="scanlines" aria-hidden="true"></div>
+    <!-- Vignette -->
+    <div class="vignette" aria-hidden="true"></div>
+
+    <!-- ══════════ BOOT SEQUENCE SCREEN ══════════ -->
+    <div id="boot-screen" class="boot-screen">
+        <div class="boot-content">
+            <div class="boot-logo glitch" data-text="SHADOWPATH">SHADOWPATH</div>
+            <div class="boot-subtitle">VIGILANTE URBANO &bull; SYS v2.7.1-SP</div>
+            <div class="boot-terminal" id="boot-terminal"></div>
+            <div class="boot-progress">
+                <div class="boot-progress-bar" id="boot-progress"></div>
+            </div>
+            <div class="boot-skip">Pressione qualquer tecla para pular</div>
+        </div>
+    </div>
+
+    <!-- ══════════ MAIN APPLICATION ══════════ -->
+    <div id="app" class="app hidden">
+
+        <!-- ── TOP HUD BAR ── -->
+        <header class="hud-bar top-bar" id="top-bar">
+            <div class="hud-corner tl"></div>
+            <div class="hud-corner tr"></div>
+            <div class="top-bar-left">
+                <span class="logo-text glitch-sm" data-text="SHADOWPATH">SHADOW<span class="accent">PATH</span></span>
+                <span class="version">v2.7.1</span>
+            </div>
+            <div class="top-bar-center">
+                <div class="threat-indicator" id="threat-indicator">
+                    <span class="label">NÍVEL DE AMEAÇA</span>
+                    <div class="threat-badge medium" id="threat-badge">
+                        <span class="threat-icon">◆</span>
+                        <span class="threat-text" id="threat-level">MÉDIO</span>
+                    </div>
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <span class="clock" id="clock">00:00:00</span>
+                <span class="coords" id="coords-display">-23.5505 | -46.6333</span>
+                <div class="signal-bars">
+                    <span class="bar active"></span>
+                    <span class="bar active"></span>
+                    <span class="bar active"></span>
+                    <span class="bar dim"></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ── MAP ── -->
+        <div id="map" class="map-container"></div>
+
+        <!-- ── SCAN OVERLAY ── -->
+        <div id="scan-overlay" class="scan-overlay hidden" aria-hidden="true">
+            <div class="scan-ring ring1"></div>
+            <div class="scan-ring ring2"></div>
+            <div class="scan-ring ring3"></div>
+            <div class="scan-crosshair"></div>
+            <div class="scan-label">SCANNING PERÍMETRO...</div>
+            <div class="scan-data" id="scan-data"></div>
+        </div>
+
+        <!-- ── SIDE PANEL ── -->
+        <aside class="side-panel" id="side-panel">
+            <div class="panel-header">
+                <div class="panel-title"><span class="icon">◉</span> PAINEL DE CONTROLE</div>
+                <button class="panel-toggle" id="panel-toggle" aria-label="Alternar painel">◀</button>
+            </div>
+
+            <div class="panel-body" id="panel-body">
+                <!-- Status -->
+                <section class="panel-section">
+                    <h2 class="section-title"><span class="decorator">//</span> STATUS DO OPERADOR</h2>
+                    <div class="status-grid">
+                        <div class="status-item"><span class="s-label">Status</span><span class="s-value online" id="user-status">● ONLINE</span></div>
+                        <div class="status-item"><span class="s-label">Perfil</span><span class="s-value">Protagonista</span></div>
+                        <div class="status-item"><span class="s-label">Setor</span><span class="s-value" id="sector">Sé — Centro</span></div>
+                        <div class="status-item"><span class="s-label">Visibilidade</span><span class="s-value" id="visibility-status">NORMAL</span></div>
+                    </div>
+                </section>
+
+                <!-- Context -->
+                <section class="panel-section">
+                    <h2 class="section-title"><span class="decorator">//</span> ANÁLISE CONTEXTUAL</h2>
+                    <div class="context-box" id="context-box">
+                        <p id="context-text" class="context-text typing">Iniciando análise do perímetro...</p>
+                    </div>
+                </section>
+
+                <!-- Actions -->
+                <section class="panel-section">
+                    <h2 class="section-title"><span class="decorator">//</span> AÇÕES RÁPIDAS</h2>
+                    <div class="action-grid">
+                        <button class="action-btn scan-btn" id="btn-scan"><span class="btn-icon">⟐</span><span>Scan Rápido</span></button>
+                        <button class="action-btn ghost-btn" id="btn-ghost"><span class="btn-icon">◌</span><span>Modo Fantasma</span></button>
+                        <button class="action-btn alert-btn" id="btn-alert"><span class="btn-icon">△</span><span>Alertar Amigos</span></button>
+                        <button class="action-btn routes-btn" id="btn-routes"><span class="btn-icon">⬡</span><span>Rotas Seguras</span></button>
+                    </div>
+                </section>
+
+                <!-- Alerts Feed -->
+                <section class="panel-section">
+                    <h2 class="section-title"><span class="decorator">//</span> FEED DE ALERTAS</h2>
+                    <div class="alerts-feed" id="alerts-feed"></div>
+                </section>
+            </div>
+        </aside>
+
+        <!-- ── MOBILE PANEL TOGGLE ── -->
+        <button class="mobile-panel-btn" id="mobile-panel-btn" aria-label="Abrir painel">
+            <span>◉</span>
+        </button>
+
+        <!-- ── BOTTOM HUD BAR ── -->
+        <footer class="hud-bar bottom-bar" id="bottom-bar">
+            <div class="hud-corner bl"></div>
+            <div class="hud-corner br"></div>
+            <div class="bottom-left">
+                <span class="label">LAT</span> <span id="lat-display">-23.5505</span>
+                <span class="sep">│</span>
+                <span class="label">LNG</span> <span id="lng-display">-46.6333</span>
+            </div>
+            <div class="bottom-center">
+                <div class="legend">
+                    <span class="legend-item danger">◆ Perigo Alto</span>
+                    <span class="legend-item warning">◆ Perigo Médio</span>
+                    <span class="legend-item safe">◆ Zona Segura</span>
+                    <span class="legend-item escape">◆ Ponto Aliado</span>
+                </div>
+            </div>
+            <div class="bottom-right">
+                <span id="zoom-display">ZOOM: 14</span>
+                <span class="sep">│</span>
+                <span>CAMADA: DARK_MATTER</span>
+            </div>
+        </footer>
+
+        <!-- ── TOAST NOTIFICATIONS ── -->
+        <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+        <!-- ── MARKER DETAIL MODAL ── -->
+        <div class="detail-modal hidden" id="detail-modal">
+            <div class="detail-content">
+                <button class="detail-close" id="detail-close">✕</button>
+                <div id="detail-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════ SCRIPTS ══════════ -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
