@@ -1,7 +1,7 @@
 {
   "meta": {
     "generator": "saifen_pipeline",
-    "generated_at": "2026-06-21T18:03:21+00:00",
+    "generated_at": "2026-06-21T18:35:38+00:00",
     "version": "0.1.0"
   },
   "total_incidents": 57497,
@@ -15,7 +15,7 @@
     "tarde": 16178,
     "manha": 12121,
     "madrugada": 8477,
-    "None": 184
+    "nan": 184
   },
   "top_neighborhoods": {
     "PINHEIROS": 2206,
