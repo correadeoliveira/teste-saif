@@ -7,7 +7,7 @@
 
 ---
 
-## // INITIATION SEQUENCE
+# INITIATION SEQUENCE
 
 To access the simulation terminal:
 
@@ -22,7 +22,7 @@ To access the simulation terminal:
 
 ---
 
-## // VISUAL OVERRIDE (Context 4)
+# VISUAL OVERRIDE (Context 4)
 
 Interface mimics legacy CRT monitoring systems. 
 
@@ -33,7 +33,7 @@ Interface mimics legacy CRT monitoring systems.
 
 ---
 
-## // CAPABILITIES
+# CAPABILITIES
 
 ### RISK ANALYSIS
 - **Dynamic Risk Levels** — Computed in real-time. We see where you look.
@@ -53,40 +53,6 @@ Interface mimics legacy CRT monitoring systems.
 - **Transit Networks** — Active transport links and final departure times.
 - **Verified Routes** — Secure paths confirmed by operatives.
 
----
-
-## // ARCHITECTURE
-
-```
-js/
-├── main.js                  # Entry point
-├── core/
-│   └── App.js               # Core Orchestrator
-├── data/
-│   └── MockData.js          # Simulated coordinates (Test Data)
-├── map/
-│   ├── CrimeMap.js          # Heatmap rendering
-│   ├── MarkerManager.js     # Tactical POIs
-│   ├── RouteManager.js      # Pathfinding
-│   ├── LayerManager.js      # Layer toggles
-│   ├── FlowLayer.js         # Entity density
-│   └── LightingLayer.js     # Illumination grid
-└── ui/
-    ├── BootScreen.js         # CRT Initialization sequence
-    ├── AlertSystem.js        # Threat notification feed
-    ├── FilterSystem.js       # Variable controllers
-    ├── HUDController.js      # Heads-Up Display
-    └── RiskAnalyzer.js       # Threat calculation engine
-```
-
----
-
-## // SYSTEM REQUIREMENTS
-
-- **Core:** HTML5 / CSS3 / JavaScript ES6 Modules. No external frameworks.
-- **Cartography:** Leaflet.js with Dark No Labels tile server.
-- **Heat Mapping:** Leaflet.heat.
-- **Typography Engine:** Google Fonts.
 
 ---
 
