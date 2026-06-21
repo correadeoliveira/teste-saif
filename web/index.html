@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Saifen — Análise de Risco Urbano</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Google Fonts: Share Tech Mono + VT323 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ══════════ TELA DE BOOT ══════════ -->
+    <div id="boot-screen" class="boot-screen">
+        <div class="boot-container">
+            <div class="boot-logo">SAIFEN</div>
+            <div class="boot-subtitle">Sistema de Análise de Risco Urbano // v1.0</div>
+            <div id="boot-terminal" class="boot-terminal"></div>
+            <div class="boot-progress-bar">
+                <div id="boot-progress" class="boot-progress-fill"></div>
+            </div>
+            <div class="boot-hint">Pressione qualquer tecla ou toque para continuar</div>
+        </div>
+    </div>
+
+    <!-- ══════════ APLICAÇÃO PRINCIPAL ══════════ -->
+    <div id="app" class="app-container hidden">
+
+        <!-- Efeitos CRT -->
+        <div class="crt-overlay"></div>
+        <div class="scanlines"></div>
+        <div class="vignette"></div>
+
+        <!-- ══════════ MAPA CENTRAL ══════════ -->
+        <div id="map" class="map-container"></div>
+
+        <!-- ══════════ HUD: TOPO ══════════ -->
+        <header class="hud-header">
+            <div class="hud-left">
+                <div class="brand">
+                    <span class="brand-icon">◈</span>
+                    <span class="brand-text">SAIFEN</span>
+                </div>
+                <div class="region-info">
+                    <span class="label">REGIÃO:</span>
+                    <span id="region-display" class="value">Centro SP</span>
+                </div>
+            </div>
+            <div class="hud-center">
+                <div class="threat-indicator">
+                    <span class="label">NÍVEL DE RISCO:</span>
+                    <div id="threat-badge" class="threat-badge medium">
+                        <span id="threat-level">MÉDIO</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hud-right">
+                <div class="clock-display" id="clock">00:00:00</div>
+                <div class="conn-status">
+                    <span class="dot blink"></span> ONLINE
+                </div>
+                <button id="mobile-panel-btn" class="mobile-only-btn">☰</button>
+            </div>
+        </header>
+
+        <!-- ══════════ HUD: PAINEL LATERAL ESQUERDO ══════════ -->
+        <aside id="side-panel" class="side-panel">
+            <button id="panel-toggle" class="panel-toggle">◀</button>
+
+            <div class="panel-body">
+
+                <!-- FILTROS DE CRIME -->
+                <div class="panel-section">
+                    <h3 class="section-title">FILTROS DE CRIME</h3>
+
+                    <div class="filter-group">
+                        <span class="filter-label">Tipo de Ocorrência</span>
+                        <div class="checkbox-grid">
+                            <label class="crt-checkbox">
+                                <input type="checkbox" data-filter="type" value="furto" checked>
+                                <span class="check-indicator"></span>
+                                <span class="check-label">Furto</span>
+                            </label>
+                            <label class="crt-checkbox">
+                                <input type="checkbox" data-filter="type" value="roubo" checked>
+                                <span class="check-indicator"></span>
+                                <span class="check-label">Roubo</span>
+                            </label>
+                            <label class="crt-checkbox">
+                                <input type="checkbox" data-filter="type" value="assalto" checked>
+                                <span class="check-indicator"></span>
+                                <span class="check-label">Assalto</span>
+                            </label>
+                            <label class="crt-checkbox">
+                                <input type="checkbox" data-filter="type" value="agressao" checked>
+                                <span class="check-indicator"></span>
+                                <span class="check-label">Agressão</span>
+                            </label>
+                            <label class="crt-checkbox">
+                                <input type="checkbox" data-filter="type" value="trafico" checked>
+                                <span class="check-indicator"></span>
+                                <span class="check-label">Tráfico</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <span class="filter-label">Período</span>
+                        <select id="filter-period" class="crt-select" data-filter="period">
+                            <option value="all">Todos os períodos</option>
+                            <option value="manha">Manhã (06h–12h)</option>
+                            <option value="tarde">Tarde (12h–18h)</option>
+                            <option value="noite">Noite (18h–00h)</option>
+                            <option value="madrugada">Madrugada (00h–06h)</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <span class="filter-label">Bairro</span>
+                        <select id="filter-region" class="crt-select" data-filter="region">
+                            <option value="all">Toda a região</option>
+                            <option value="se">Sé / Catedral</option>
+                            <option value="republica">República</option>
+                            <option value="luz">Luz / Cracolândia</option>
+                            <option value="paulista">Av. Paulista</option>
+                            <option value="liberdade">Liberdade</option>
+                            <option value="bela-vista">Bela Vista</option>
+                            <option value="consolacao">Consolação</option>
+                            <option value="anhangabau">Anhangabaú</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- CAMADAS DO MAPA -->
+                <div class="panel-section">
+                    <h3 class="section-title">CAMADAS DO MAPA</h3>
+                    <div class="layer-list">
+                        <div class="layer-toggle active" data-layer="heatmap">
+                            <div class="layer-label">
+                                <span class="layer-icon">▦</span>
+                                Heatmap de Crimes
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                        <div class="layer-toggle active" data-layer="safepoints">
+                            <div class="layer-label">
+                                <span class="layer-icon">◉</span>
+                                Safe Points 24h
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                        <div class="layer-toggle" data-layer="flow">
+                            <div class="layer-label">
+                                <span class="layer-icon">∿</span>
+                                Fluxo de Pessoas
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                        <div class="layer-toggle" data-layer="lighting">
+                            <div class="layer-label">
+                                <span class="layer-icon">◎</span>
+                                Iluminação Noturna
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                        <div class="layer-toggle active" data-layer="transport">
+                            <div class="layer-label">
+                                <span class="layer-icon">⊠</span>
+                                Transporte Público
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                        <div class="layer-toggle" data-layer="routes">
+                            <div class="layer-label">
+                                <span class="layer-icon">→</span>
+                                Rotas Seguras
+                            </div>
+                            <div class="toggle-switch"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANÁLISE DE RISCO -->
+                <div class="panel-section">
+                    <h3 class="section-title">ANÁLISE DE RISCO DA REGIÃO</h3>
+                    <div id="risk-card" class="risk-card">
+                        <div class="risk-level-row">
+                            <span class="risk-level-label">Risco Geral</span>
+                            <span id="risk-level-badge" class="risk-level-value medium">MÉDIO</span>
+                        </div>
+                        <div class="risk-groups">
+                            <div class="group-label">Grupos mais afetados</div>
+                            <div id="risk-group-tags" class="group-tags">
+                                <span class="risk-tag">Pedestres</span>
+                                <span class="risk-tag">Idosos</span>
+                            </div>
+                        </div>
+                        <p id="risk-narrative" class="risk-narrative">Analisando dados da região...</p>
+                    </div>
+                </div>
+
+                <!-- INFORMAÇÕES DA REGIÃO -->
+                <div class="panel-section">
+                    <h3 class="section-title">INFORMAÇÕES DA REGIÃO</h3>
+                    <div class="info-rows">
+                        <div class="data-row">
+                            <span class="d-label">LAT</span>
+                            <span id="lat-display" class="d-value">-23.5505</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="d-label">LNG</span>
+                            <span id="lng-display" class="d-value">-46.6333</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="d-label">Safe Points</span>
+                            <span id="nearby-safepoints" class="d-value">—</span>
+                        </div>
+                        <div class="data-row">
+                            <span class="d-label">Transporte</span>
+                            <span id="nearby-transport" class="d-value">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FEED DE ALERTAS -->
+                <div class="panel-section">
+                    <h3 class="section-title">FEED DE ALERTAS</h3>
+                    <div id="alerts-feed" class="alerts-feed"></div>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ══════════ HUD: RODAPÉ ══════════ -->
+        <footer class="hud-footer">
+            <div class="footer-left">
+                <span class="label">COORD:</span>
+                <span id="coords-display">-23.5505 | -46.6333</span>
+                <span class="footer-sep">|</span>
+                <span id="zoom-display">Z:14</span>
+            </div>
+
+            <div class="footer-center">
+                <div class="context-bar">
+                    <span class="context-icon">ℹ</span>
+                    <span id="context-text" class="context-text">Monitorando região central de São Paulo...</span>
+                </div>
+            </div>
+
+            <div class="footer-right">
+                <div class="heatmap-legend">
+                    <span>RISCO</span>
+                    <div class="legend-bar"></div>
+                    <span>CRÍTICO</span>
+                </div>
+            </div>
+        </footer>
+
+        <!-- ══════════ FAB MOBILE ══════════ -->
+        <button id="mobile-panel-fab" class="mobile-panel-fab">☰</button>
+
+        <!-- ══════════ TOAST NOTIFICATIONS ══════════ -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <!-- ══════════ SCRIPTS ══════════ -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

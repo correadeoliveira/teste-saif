@@ -1,0 +1,43 @@
+name: supabase · migrate
+
+# Aplicação MANUAL apenas (workflow_dispatch). Migrations destrutivas
+# nunca devem rodar automaticamente em push para evitar drop acidental.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Ambiente alvo"
+        required: true
+        default: "staging"
+        type: choice
+        options: [staging, production]
+      include_seed:
+        description: "Rodar seed.sql após migrations?"
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}     # gates de aprovação no GitHub
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Login
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Apply migrations
+        run: supabase db push --linked
+
+      - name: Apply seed
+        if: ${{ inputs.include_seed }}
+        run: |
+          psql "${{ secrets.SUPABASE_DB_URL }}" -f supabase/seed.sql

@@ -1,0 +1,62 @@
+# ═══════════════════════════════════════════════════
+# SAIFEN — monorepo .gitignore
+# ═══════════════════════════════════════════════════
+
+# ─── Python (pipeline/) ────────────────────────────────────
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+build/
+dist/
+
+# ─── Jupyter (pipeline/notebooks/) ─────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ─── Dados intermediários (cache local, regenerável) ───────
+data/processed/*.parquet
+data/processed/*.feather
+data/processed/*.cache
+
+# ─── Node / Expo (mobile/) ─────────────────────────────────
+node_modules/
+.expo/
+web-build/
+*.tsbuildinfo
+mobile/dist/
+mobile/.expo/
+
+# ─── Supabase CLI (estado local) ───────────────────────────
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# ─── Segredos ──────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ─── OS / Editor ───────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ─── Logs / Output efêmero ─────────────────────────────────
+*.log
+nohup.out
+
+# ─── Manter exemplos vazios das pastas ─────────────────────
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!shared/heatmaps/.gitkeep

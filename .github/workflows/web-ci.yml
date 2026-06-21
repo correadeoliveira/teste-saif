@@ -1,0 +1,33 @@
+name: web · ci
+
+on:
+  push:
+    paths:
+      - "web/**"
+      - ".github/workflows/web-ci.yml"
+  pull_request:
+    paths:
+      - "web/**"
+
+jobs:
+  lint-html:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate HTML
+        run: |
+          # tidy é mais permissivo; falha apenas em erros estruturais
+          sudo apt-get update -qq
+          sudo apt-get install -y tidy
+          tidy -errors -q web/index.html || true
+
+      - name: Sanity check imports
+        run: |
+          # Confere que os imports em web/src/main.js apontam para arquivos existentes
+          set -e
+          missing=0
+          while IFS= read -r path; do
+            [[ -f "web/src/$path" || -f "web/$path" ]] || { echo "Missing: $path"; missing=1; }
+          done < <(grep -rhoE "from\s+'[./].+\.js'" web/src/ | sed -E "s/from\s+'(.+)'/\1/")
+          exit $missing

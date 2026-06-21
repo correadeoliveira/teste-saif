@@ -1,0 +1,31 @@
+# ═══════════════════════════════════════════════════════════
+# SAIFEN — Python pipeline dependencies
+# Tested on Python 3.9+
+# ═══════════════════════════════════════════════════════════
+
+# ── Core: data manipulation ────────────────────────────────
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=14.0.0          # parquet I/O for cached processed data
+
+# ── Excel I/O ──────────────────────────────────────────────
+openpyxl>=3.1.0          # .xlsx reader (SSP-SP files)
+
+# ── Scientific / KDE ───────────────────────────────────────
+scipy>=1.10.0            # gaussian_kde for heatmap generation
+
+# ── Geospatial (lightweight: no GDAL dependency) ───────────
+shapely>=2.0.0           # geometry primitives for GeoJSON grid export
+
+# ── Notebooks / exploration ────────────────────────────────
+jupyterlab>=4.0.0
+ipykernel>=6.0.0
+matplotlib>=3.7.0        # exploratory plots in notebooks
+seaborn>=0.13.0          # optional, used in EDA notebook
+
+# ── Backend integration (Supabase / arquitetura MVP) ───────
+supabase>=2.0.0          # used by scripts/push_to_supabase.py (optional)
+python-dotenv>=1.0.0     # load .env files
+
+# ── CLI / utils ────────────────────────────────────────────
+tqdm>=4.66.0             # progress bars for long-running scripts

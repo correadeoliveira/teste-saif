@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Saifen",
+    "slug": "saifen",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.saifen.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Saifen usa sua localização para mostrar o heatmap de risco da sua região e alertá-lo sobre zonas críticas próximas.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Saifen pode monitorar em background para alertá-lo ao entrar em uma zona crítica."
+      }
+    },
+    "android": {
+      "package": "com.saifen.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permitir Saifen acessar sua localização para alertas de risco em tempo real."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": { "projectId": "TBD" }
+    }
+  }
+}
