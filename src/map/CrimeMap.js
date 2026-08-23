@@ -4,6 +4,7 @@ import { RouteManager } from './RouteManager.js';
 import { MarkerManager } from './MarkerManager.js';
 import { FlowLayer } from './FlowLayer.js';
 import { LightingLayer } from './LightingLayer.js';
+import { ContactsLayer } from './ContactsLayer.js';
 
 export class CrimeMap {
     constructor() {
@@ -13,6 +14,7 @@ export class CrimeMap {
         this.markerManager = null;
         this.flowLayer = null;
         this.lightingLayer = null;
+        this.contactsLayer = null;
         this._activeFilters = { types: [], period: 'all' };
         this._heatmapLoader = heatmapLoader;
         this._realDataLoaded = false;
@@ -67,6 +69,9 @@ export class CrimeMap {
 
         this.flowLayer = new FlowLayer(this.map);
         this.lightingLayer = new LightingLayer(this.map);
+
+        this.contactsLayer = new ContactsLayer(this.map);
+        this.contactsLayer.init();
 
         this.setupEvents();
     }
