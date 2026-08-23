@@ -1,0 +1,10 @@
+[out:json];
+(
+  way["name"="Avenida Ipiranga"](-23.548,-46.645,-23.541,-46.637);
+  way["name"="Rua Conselheiro Crispiniano"](-23.548,-46.645,-23.541,-46.637);
+  way["name"="Rua 24 de Maio"](-23.548,-46.645,-23.541,-46.637);
+  way["name"="Avenida São João"](-23.548,-46.645,-23.541,-46.637);
+  way["name"="Rua Barão de Itapetininga"](-23.548,-46.645,-23.541,-46.637);
+  way["name"="Rua Dom José de Barros"](-23.548,-46.645,-23.541,-46.637);
+);
+out geom;

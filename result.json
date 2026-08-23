@@ -1,0 +1,1171 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-06-21T21:13:29Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "way",
+  "id": 8579562,
+  "bounds": {
+    "minlat": -23.5444846,
+    "minlon": -46.6380880,
+    "maxlat": -23.5435525,
+    "maxlon": -46.6364953
+  },
+  "nodes": [
+    2634256030,
+    2396360206,
+    11509018712,
+    1477495382
+  ],
+  "geometry": [
+    { "lat": -23.5444846, "lon": -46.6364953 },
+    { "lat": -23.5437272, "lon": -46.6377905 },
+    { "lat": -23.5436605, "lon": -46.6379041 },
+    { "lat": -23.5435525, "lon": -46.6380880 }
+  ],
+  "tags": {
+    "highway": "pedestrian",
+    "lit": "yes",
+    "name": "Avenida São João",
+    "surface": "paved"
+  }
+},
+{
+  "type": "way",
+  "id": 8579656,
+  "bounds": {
+    "minlat": -23.5429699,
+    "minlon": -46.6412906,
+    "maxlat": -23.5429354,
+    "maxlon": -46.6411459
+  },
+  "nodes": [
+    6202562249,
+    6199283550,
+    4209647264,
+    4511369377,
+    2578181668,
+    1477493415
+  ],
+  "geometry": [
+    { "lat": -23.5429354, "lon": -46.6411459 },
+    { "lat": -23.5429605, "lon": -46.6411772 },
+    { "lat": -23.5429699, "lon": -46.6411968 },
+    { "lat": -23.5429693, "lon": -46.6412251 },
+    { "lat": -23.5429605, "lon": -46.6412536 },
+    { "lat": -23.5429407, "lon": -46.6412906 }
+  ],
+  "tags": {
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "40",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "right",
+    "surface": "asphalt",
+    "trolley_wire": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 34858246,
+  "bounds": {
+    "minlat": -23.5455966,
+    "minlon": -46.6418803,
+    "maxlat": -23.5436353,
+    "maxlon": -46.6394281
+  },
+  "nodes": [
+    60685762,
+    12106413817,
+    4210972253,
+    12106976734,
+    5086350018,
+    12106976735,
+    60685606,
+    60685604,
+    60685605,
+    60641645
+  ],
+  "geometry": [
+    { "lat": -23.5436353, "lon": -46.6418803 },
+    { "lat": -23.5437140, "lon": -46.6417827 },
+    { "lat": -23.5437913, "lon": -46.6416869 },
+    { "lat": -23.5439971, "lon": -46.6414318 },
+    { "lat": -23.5439990, "lon": -46.6414294 },
+    { "lat": -23.5440606, "lon": -46.6413530 },
+    { "lat": -23.5444971, "lon": -46.6408117 },
+    { "lat": -23.5452539, "lon": -46.6398582 },
+    { "lat": -23.5454372, "lon": -46.6396292 },
+    { "lat": -23.5455966, "lon": -46.6394281 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "pedestrian",
+    "lit": "yes",
+    "name": "Rua Barão de Itapetininga",
+    "postal_code": "01042-000",
+    "surface": "paved",
+    "wikidata": "Q10364799"
+  }
+},
+{
+  "type": "way",
+  "id": 34858247,
+  "bounds": {
+    "minlat": -23.5452451,
+    "minlon": -46.6417454,
+    "maxlat": -23.5444971,
+    "maxlon": -46.6408117
+  },
+  "nodes": [
+    60685817,
+    12106976736,
+    60685606
+  ],
+  "geometry": [
+    { "lat": -23.5452451, "lon": -46.6417454 },
+    { "lat": -23.5448253, "lon": -46.6412214 },
+    { "lat": -23.5444971, "lon": -46.6408117 }
+  ],
+  "tags": {
+    "highway": "pedestrian",
+    "lit": "yes",
+    "name": "Rua Dom José de Barros",
+    "surface": "paved"
+  }
+},
+{
+  "type": "way",
+  "id": 38583822,
+  "bounds": {
+    "minlat": -23.5413494,
+    "minlon": -46.6421009,
+    "maxlat": -23.5411574,
+    "maxlon": -46.6420241
+  },
+  "nodes": [
+    4699224032,
+    9218446960,
+    2395197764
+  ],
+  "geometry": [
+    { "lat": -23.5413494, "lon": -46.6420241 },
+    { "lat": -23.5412081, "lon": -46.6420806 },
+    { "lat": -23.5411574, "lon": -46.6421009 }
+  ],
+  "tags": {
+    "destination": "Bom Retiro;Barra Funda",
+    "destination:colour": "green",
+    "highway": "primary_link",
+    "lanes": "1",
+    "lit": "yes",
+    "name": "Avenida São João",
+    "oneway": "yes",
+    "postal_code": "01202-000",
+    "sidewalk": "right",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 49436727,
+  "bounds": {
+    "minlat": -23.5430439,
+    "minlon": -46.6402358,
+    "maxlat": -23.5423589,
+    "maxlon": -46.6389998
+  },
+  "nodes": [
+    60685617,
+    11509018756,
+    9025376420,
+    7017272756,
+    2453466151,
+    60685619
+  ],
+  "geometry": [
+    { "lat": -23.5430439, "lon": -46.6389998 },
+    { "lat": -23.5429721, "lon": -46.6391293 },
+    { "lat": -23.5426713, "lon": -46.6396714 },
+    { "lat": -23.5424834, "lon": -46.6400101 },
+    { "lat": -23.5424518, "lon": -46.6400689 },
+    { "lat": -23.5423589, "lon": -46.6402358 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:right": "lane",
+    "cycleway:right:est_width": "1 m",
+    "cycleway:right:oneway": "no",
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "40",
+    "name": "Avenida São João",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "sidewalk": "both",
+    "source:cycleway:right": "survey",
+    "surface": "asphalt",
+    "trolley_wire": "yes",
+    "turn:lanes": "left|left;through|through"
+  }
+},
+{
+  "type": "way",
+  "id": 49436728,
+  "bounds": {
+    "minlat": -23.5446995,
+    "minlon": -46.6386448,
+    "maxlat": -23.5435525,
+    "maxlon": -46.6380586
+  },
+  "nodes": [
+    60641571,
+    12112768127,
+    9025376421,
+    2396360226,
+    2396360216,
+    4465711963,
+    7280460893,
+    1477495382
+  ],
+  "geometry": [
+    { "lat": -23.5446995, "lon": -46.6386448 },
+    { "lat": -23.5445823, "lon": -46.6385694 },
+    { "lat": -23.5439230, "lon": -46.6381452 },
+    { "lat": -23.5438408, "lon": -46.6380934 },
+    { "lat": -23.5437708, "lon": -46.6380680 },
+    { "lat": -23.5436902, "lon": -46.6380586 },
+    { "lat": -23.5436328, "lon": -46.6380629 },
+    { "lat": -23.5435525, "lon": -46.6380880 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:est_width": "3",
+    "cycleway:right": "lane",
+    "highway": "secondary",
+    "lanes": "2",
+    "lit": "yes",
+    "name": "Rua Conselheiro Crispiniano",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "sidewalk": "both",
+    "surface": "asphalt",
+    "trolley_wire": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 51385875,
+  "bounds": {
+    "minlat": -23.5430648,
+    "minlon": -46.6411060,
+    "maxlat": -23.5423589,
+    "maxlon": -46.6402358
+  },
+  "nodes": [
+    60685619,
+    6202562242,
+    8526756491,
+    8526756489,
+    6202562248,
+    60685763
+  ],
+  "geometry": [
+    { "lat": -23.5423589, "lon": -46.6402358 },
+    { "lat": -23.5424844, "lon": -46.6403963 },
+    { "lat": -23.5425346, "lon": -46.6404571 },
+    { "lat": -23.5428188, "lon": -46.6408019 },
+    { "lat": -23.5430208, "lon": -46.6410483 },
+    { "lat": -23.5430648, "lon": -46.6411060 }
+  ],
+  "tags": {
+    "highway": "secondary",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "40",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "left",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 134363702,
+  "bounds": {
+    "minlat": -23.5421585,
+    "minlon": -46.6411061,
+    "maxlat": -23.5418655,
+    "maxlon": -46.6405892
+  },
+  "nodes": [
+    6202562246,
+    9216158303,
+    457046626
+  ],
+  "geometry": [
+    { "lat": -23.5421585, "lon": -46.6405892 },
+    { "lat": -23.5419087, "lon": -46.6410297 },
+    { "lat": -23.5418655, "lon": -46.6411061 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:right": "lane",
+    "cycleway:right:est_width": "1 m",
+    "cycleway:right:oneway": "no",
+    "destination": "Zona Oeste;Lapa",
+    "destination:colour": "green",
+    "highway": "primary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "40",
+    "name": "Avenida São João",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "sidewalk": "both",
+    "source:cycleway:right": "survey",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 151726730,
+  "bounds": {
+    "minlat": -23.5423589,
+    "minlon": -46.6403522,
+    "maxlat": -23.5422929,
+    "maxlon": -46.6402358
+  },
+  "nodes": [
+    60685619,
+    8526756488,
+    60685620
+  ],
+  "geometry": [
+    { "lat": -23.5423589, "lon": -46.6402358 },
+    { "lat": -23.5423260, "lon": -46.6402939 },
+    { "lat": -23.5422929, "lon": -46.6403522 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:right": "lane",
+    "highway": "primary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "40",
+    "name": "Avenida São João",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "sidewalk": "no",
+    "surface": "asphalt",
+    "trolley_wire": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 183489040,
+  "bounds": {
+    "minlat": -23.5418655,
+    "minlon": -46.6416797,
+    "maxlat": -23.5415430,
+    "maxlon": -46.6411061
+  },
+  "nodes": [
+    457046626,
+    9216158306,
+    8656410625
+  ],
+  "geometry": [
+    { "lat": -23.5418655, "lon": -46.6411061 },
+    { "lat": -23.5418216, "lon": -46.6411841 },
+    { "lat": -23.5415430, "lon": -46.6416797 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:right": "lane",
+    "cycleway:right:est_width": "1 m",
+    "cycleway:right:oneway": "no",
+    "highway": "primary",
+    "lanes": "3",
+    "lit": "yes",
+    "name": "Avenida São João",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "sidewalk": "both",
+    "source:cycleway:right": "survey",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 230621491,
+  "bounds": {
+    "minlat": -23.5455523,
+    "minlon": -46.6440881,
+    "maxlat": -23.5450676,
+    "maxlon": -46.6433987
+  },
+  "nodes": [
+    60685757,
+    10699552381,
+    8073430771,
+    64057717,
+    4511301907,
+    4511301908
+  ],
+  "geometry": [
+    { "lat": -23.5455523, "lon": -46.6440881 },
+    { "lat": -23.5454772, "lon": -46.6439958 },
+    { "lat": -23.5451966, "lon": -46.6436510 },
+    { "lat": -23.5451696, "lon": -46.6436128 },
+    { "lat": -23.5451557, "lon": -46.6435861 },
+    { "lat": -23.5450676, "lon": -46.6433987 }
+  ],
+  "tags": {
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "right",
+    "surface": "asphalt",
+    "trolley_wire": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 246708358,
+  "bounds": {
+    "minlat": -23.5413755,
+    "minlon": -46.6420241,
+    "maxlat": -23.5413494,
+    "maxlon": -46.6419777
+  },
+  "nodes": [
+    1464768585,
+    4699224032
+  ],
+  "geometry": [
+    { "lat": -23.5413755, "lon": -46.6419777 },
+    { "lat": -23.5413494, "lon": -46.6420241 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:right": "lane",
+    "cycleway:right:est_width": "1 m",
+    "cycleway:right:oneway": "no",
+    "destination:colour:forward": "blue",
+    "destination:forward": "77º Distr. Policial;Sabará",
+    "destination:symbol:forward": "none;hospital",
+    "highway": "primary",
+    "lanes": "3",
+    "lanes:backward": "1",
+    "lit": "yes",
+    "name": "Avenida São João",
+    "oneway": "no",
+    "oneway:bicycle": "no",
+    "sidewalk": "both",
+    "source:cycleway:right": "survey",
+    "surface": "asphalt",
+    "turn:backward": "right"
+  }
+},
+{
+  "type": "way",
+  "id": 247274134,
+  "bounds": {
+    "minlat": -23.5438959,
+    "minlon": -46.6400609,
+    "maxlat": -23.5430439,
+    "maxlon": -46.6389998
+  },
+  "nodes": [
+    60685608,
+    11509018729,
+    11490963258,
+    4698295396,
+    11509018742,
+    60685617
+  ],
+  "geometry": [
+    { "lat": -23.5438959, "lon": -46.6400609 },
+    { "lat": -23.5438659, "lon": -46.6400236 },
+    { "lat": -23.5432455, "lon": -46.6392509 },
+    { "lat": -23.5432427, "lon": -46.6392474 },
+    { "lat": -23.5431300, "lon": -46.6391070 },
+    { "lat": -23.5430439, "lon": -46.6389998 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "highway": "pedestrian",
+    "lit": "yes",
+    "name": "Rua Dom José de Barros",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 262460752,
+  "bounds": {
+    "minlat": -23.5431538,
+    "minlon": -46.6389998,
+    "maxlat": -23.5430439,
+    "maxlon": -46.6388035
+  },
+  "nodes": [
+    2396360210,
+    13591157760,
+    60685617
+  ],
+  "geometry": [
+    { "lat": -23.5431538, "lon": -46.6388035 },
+    { "lat": -23.5431291, "lon": -46.6388476 },
+    { "lat": -23.5430439, "lon": -46.6389998 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:right": "lane",
+    "cycleway:right:est_width": "1 m",
+    "cycleway:right:oneway": "no",
+    "destination": "Zona Oeste;Lapa",
+    "destination:colour": "green",
+    "highway": "secondary",
+    "lanes": "2",
+    "lit": "yes",
+    "name": "Avenida São João",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "sidewalk": "left",
+    "source:cycleway:right": "survey",
+    "surface": "asphalt",
+    "trolley_wire": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 289934631,
+  "bounds": {
+    "minlat": -23.5411160,
+    "minlon": -46.6388756,
+    "maxlat": -23.5403957,
+    "maxlon": -46.6377642
+  },
+  "nodes": [
+    60685648,
+    4213943505,
+    4395389111,
+    9111839642,
+    2578181627,
+    8526756484,
+    60685693
+  ],
+  "geometry": [
+    { "lat": -23.5403957, "lon": -46.6377642 },
+    { "lat": -23.5404457, "lon": -46.6378415 },
+    { "lat": -23.5406608, "lon": -46.6381739 },
+    { "lat": -23.5407411, "lon": -46.6382980 },
+    { "lat": -23.5410201, "lon": -46.6387291 },
+    { "lat": -23.5410751, "lon": -46.6388141 },
+    { "lat": -23.5411160, "lon": -46.6388756 }
+  ],
+  "tags": {
+    "foot": "yes",
+    "highway": "primary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "right",
+    "surface": "asphalt",
+    "trolley_wire": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 289934633,
+  "bounds": {
+    "minlat": -23.5423589,
+    "minlon": -46.6402358,
+    "maxlat": -23.5413203,
+    "maxlon": -46.6389315
+  },
+  "nodes": [
+    60685713,
+    12811891938,
+    60685710,
+    6202562243,
+    60685619
+  ],
+  "geometry": [
+    { "lat": -23.5413203, "lon": -46.6389315 },
+    { "lat": -23.5414263, "lon": -46.6390653 },
+    { "lat": -23.5416285, "lon": -46.6393206 },
+    { "lat": -23.5422472, "lon": -46.6400959 },
+    { "lat": -23.5423589, "lon": -46.6402358 }
+  ],
+  "tags": {
+    "highway": "primary",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "left",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 289934634,
+  "bounds": {
+    "minlat": -23.5422929,
+    "minlon": -46.6403522,
+    "maxlat": -23.5412184,
+    "maxlon": -46.6390090
+  },
+  "nodes": [
+    60685696,
+    12811891937,
+    60685733,
+    9142476110,
+    2578181656,
+    60685620
+  ],
+  "geometry": [
+    { "lat": -23.5412184, "lon": -46.6390090 },
+    { "lat": -23.5413244, "lon": -46.6391417 },
+    { "lat": -23.5415245, "lon": -46.6393921 },
+    { "lat": -23.5418263, "lon": -46.6397698 },
+    { "lat": -23.5421692, "lon": -46.6401978 },
+    { "lat": -23.5422929, "lon": -46.6403522 }
+  ],
+  "tags": {
+    "highway": "primary",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "right",
+    "surface": "asphalt",
+    "trolley_wire": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 289934637,
+  "bounds": {
+    "minlat": -23.5412184,
+    "minlon": -46.6390090,
+    "maxlat": -23.5411160,
+    "maxlon": -46.6388756
+  },
+  "nodes": [
+    60685693,
+    60685696
+  ],
+  "geometry": [
+    { "lat": -23.5411160, "lon": -46.6388756 },
+    { "lat": -23.5412184, "lon": -46.6390090 }
+  ],
+  "tags": {
+    "foot": "yes",
+    "highway": "primary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "no",
+    "smoothness": "good",
+    "surface": "asphalt",
+    "trolley_wire": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 312216484,
+  "bounds": {
+    "minlat": -23.5469009,
+    "minlon": -46.6404666,
+    "maxlat": -23.5455966,
+    "maxlon": -46.6394281
+  },
+  "nodes": [
+    60641645,
+    4503381877,
+    60641662
+  ],
+  "geometry": [
+    { "lat": -23.5455966, "lon": -46.6394281 },
+    { "lat": -23.5456847, "lon": -46.6394946 },
+    { "lat": -23.5469009, "lon": -46.6404666 }
+  ],
+  "tags": {
+    "highway": "pedestrian",
+    "lit": "yes",
+    "name": "Rua Conselheiro Crispiniano",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 312281822,
+  "bounds": {
+    "minlat": -23.5444971,
+    "minlon": -46.6408117,
+    "maxlat": -23.5438959,
+    "maxlon": -46.6400609
+  },
+  "nodes": [
+    60685606,
+    12106413823,
+    60685608
+  ],
+  "geometry": [
+    { "lat": -23.5444971, "lon": -46.6408117 },
+    { "lat": -23.5439164, "lon": -46.6400865 },
+    { "lat": -23.5438959, "lon": -46.6400609 }
+  ],
+  "tags": {
+    "highway": "pedestrian",
+    "lit": "yes",
+    "name": "Rua Dom José de Barros",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 333520079,
+  "bounds": {
+    "minlat": -23.5412172,
+    "minlon": -46.6387981,
+    "maxlat": -23.5398622,
+    "maxlon": -46.6367038
+  },
+  "nodes": [
+    60685651,
+    8526756483,
+    9987003316,
+    5457489045,
+    8526756481,
+    60685647,
+    5457489046,
+    4395389112,
+    9043780369,
+    2578181632,
+    8526756485,
+    60685715
+  ],
+  "geometry": [
+    { "lat": -23.5398622, "lon": -46.6367038 },
+    { "lat": -23.5399065, "lon": -46.6367735 },
+    { "lat": -23.5399332, "lon": -46.6368148 },
+    { "lat": -23.5404272, "lon": -46.6375782 },
+    { "lat": -23.5404885, "lon": -46.6376729 },
+    { "lat": -23.5404993, "lon": -46.6376895 },
+    { "lat": -23.5405471, "lon": -46.6377635 },
+    { "lat": -23.5407584, "lon": -46.6380899 },
+    { "lat": -23.5409737, "lon": -46.6384227 },
+    { "lat": -23.5411230, "lon": -46.6386534 },
+    { "lat": -23.5411795, "lon": -46.6387408 },
+    { "lat": -23.5412172, "lon": -46.6387981 }
+  ],
+  "tags": {
+    "foot": "yes",
+    "highway": "primary",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "left",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 398378586,
+  "bounds": {
+    "minlat": -23.5455101,
+    "minlon": -46.6442384,
+    "maxlat": -23.5449416,
+    "maxlon": -46.6435661
+  },
+  "nodes": [
+    4011418244,
+    4210137009,
+    10699552379,
+    4011418245
+  ],
+  "geometry": [
+    { "lat": -23.5449416, "lon": -46.6435661 },
+    { "lat": -23.5450474, "lon": -46.6436911 },
+    { "lat": -23.5454167, "lon": -46.6441282 },
+    { "lat": -23.5455101, "lon": -46.6442384 }
+  ],
+  "tags": {
+    "busway:left": "lane",
+    "highway": "secondary",
+    "lanes": "3",
+    "lanes:bus": "1",
+    "lanes:bus:conditional": "0 @ (Su 00:00-24:00; Sa 00:00-04:00,15:00-24:00; 23:00-04:00)",
+    "lit": "yes",
+    "maxspeed": "40",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "right",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 419513797,
+  "bounds": {
+    "minlat": -23.5435525,
+    "minlon": -46.6388035,
+    "maxlat": -23.5431538,
+    "maxlon": -46.6380880
+  },
+  "nodes": [
+    1477495382,
+    60685616,
+    11509018716,
+    4698295394,
+    2396360210
+  ],
+  "geometry": [
+    { "lat": -23.5435525, "lon": -46.6380880 },
+    { "lat": -23.5433346, "lon": -46.6384846 },
+    { "lat": -23.5432012, "lon": -46.6387200 },
+    { "lat": -23.5431786, "lon": -46.6387598 },
+    { "lat": -23.5431538, "lon": -46.6388035 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:left": "lane",
+    "cycleway:right:est_width": "1 m",
+    "cycleway:right:oneway": "no",
+    "highway": "secondary",
+    "lanes": "2",
+    "lit": "yes",
+    "name": "Avenida São João",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "sidewalk": "both",
+    "source:cycleway:right": "survey",
+    "surface": "asphalt",
+    "trolley_wire": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 474663542,
+  "bounds": {
+    "minlat": -23.5455966,
+    "minlon": -46.6394281,
+    "maxlat": -23.5455315,
+    "maxlon": -46.6393150
+  },
+  "nodes": [
+    4685687578,
+    12106413807,
+    60641645
+  ],
+  "geometry": [
+    { "lat": -23.5455352, "lon": -46.6393150 },
+    { "lat": -23.5455315, "lon": -46.6393758 },
+    { "lat": -23.5455966, "lon": -46.6394281 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "highway": "pedestrian",
+    "lit": "yes",
+    "name": "Rua Conselheiro Crispiniano",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 603688830,
+  "bounds": {
+    "minlat": -23.5463334,
+    "minlon": -46.6449747,
+    "maxlat": -23.5455523,
+    "maxlon": -46.6440881
+  },
+  "nodes": [
+    6873202800,
+    2140878097,
+    6873202798,
+    60685757
+  ],
+  "geometry": [
+    { "lat": -23.5463334, "lon": -46.6449747 },
+    { "lat": -23.5462069, "lon": -46.6448336 },
+    { "lat": -23.5460165, "lon": -46.6446132 },
+    { "lat": -23.5455523, "lon": -46.6440881 }
+  ],
+  "tags": {
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "right",
+    "surface": "asphalt",
+    "trolley_wire": "no"
+  }
+},
+{
+  "type": "way",
+  "id": 757992309,
+  "bounds": {
+    "minlat": -23.5413494,
+    "minlon": -46.6422418,
+    "maxlat": -23.5412435,
+    "maxlon": -46.6420241
+  },
+  "nodes": [
+    4699224032,
+    9218446961,
+    457026724
+  ],
+  "geometry": [
+    { "lat": -23.5413494, "lon": -46.6420241 },
+    { "lat": -23.5412724, "lon": -46.6421754 },
+    { "lat": -23.5412435, "lon": -46.6422418 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:right": "lane",
+    "cycleway:right:est_width": "1 m",
+    "cycleway:right:oneway": "no",
+    "destination:colour:forward": "green",
+    "destination:forward": "Zona Oeste;Lapa",
+    "highway": "primary",
+    "lanes": "3",
+    "lanes:backward": "1",
+    "lanes:forward": "2",
+    "lit": "yes",
+    "name": "Avenida São João",
+    "oneway": "no",
+    "oneway:bicycle": "no",
+    "sidewalk": "left",
+    "source:cycleway:right": "survey",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 786987810,
+  "bounds": {
+    "minlat": -23.5460547,
+    "minlon": -46.6448862,
+    "maxlat": -23.5455101,
+    "maxlon": -46.6442384
+  },
+  "nodes": [
+    4011418245,
+    6873202797,
+    60685770
+  ],
+  "geometry": [
+    { "lat": -23.5455101, "lon": -46.6442384 },
+    { "lat": -23.5459088, "lon": -46.6447124 },
+    { "lat": -23.5460547, "lon": -46.6448862 }
+  ],
+  "tags": {
+    "busway:left": "lane",
+    "highway": "secondary",
+    "lanes": "3",
+    "lanes:bus": "1",
+    "lanes:bus:conditional": "0 @ (Su 00:00-24:00; Sa 00:00-04:00,15:00-24:00; 23:00-04:00)",
+    "lit": "yes",
+    "maxspeed": "40",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "right",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 918665416,
+  "bounds": {
+    "minlat": -23.5462228,
+    "minlon": -46.6450796,
+    "maxlat": -23.5460547,
+    "maxlon": -46.6448862
+  },
+  "nodes": [
+    60685770,
+    60685771,
+    7279467252
+  ],
+  "geometry": [
+    { "lat": -23.5460547, "lon": -46.6448862 },
+    { "lat": -23.5461913, "lon": -46.6450430 },
+    { "lat": -23.5462228, "lon": -46.6450796 }
+  ],
+  "tags": {
+    "busway:left": "lane",
+    "highway": "secondary",
+    "lanes": "2",
+    "lanes:bus": "1",
+    "lanes:bus:conditional": "0 @ (Su 00:00-24:00; Sa 00:00-04:00,15:00-24:00; 23:00-04:00)",
+    "lit": "yes",
+    "maxspeed": "40",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "right",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 933038489,
+  "bounds": {
+    "minlat": -23.5429354,
+    "minlon": -46.6411459,
+    "maxlat": -23.5422929,
+    "maxlon": -46.6403522
+  },
+  "nodes": [
+    60685620,
+    2578181659,
+    8526756490,
+    4511369378,
+    6202562249
+  ],
+  "geometry": [
+    { "lat": -23.5422929, "lon": -46.6403522 },
+    { "lat": -23.5424177, "lon": -46.6405081 },
+    { "lat": -23.5424523, "lon": -46.6405508 },
+    { "lat": -23.5427294, "lon": -46.6408921 },
+    { "lat": -23.5429354, "lon": -46.6411459 }
+  ],
+  "tags": {
+    "highway": "secondary",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "40",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "right",
+    "surface": "asphalt",
+    "trolley_wire": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 933321091,
+  "bounds": {
+    "minlat": -23.5413203,
+    "minlon": -46.6389315,
+    "maxlat": -23.5412172,
+    "maxlon": -46.6387981
+  },
+  "nodes": [
+    60685715,
+    60685713
+  ],
+  "geometry": [
+    { "lat": -23.5412172, "lon": -46.6387981 },
+    { "lat": -23.5413203, "lon": -46.6389315 }
+  ],
+  "tags": {
+    "highway": "primary",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "50",
+    "name": "Avenida Ipiranga",
+    "oneway": "yes",
+    "sidewalk": "no",
+    "smoothness": "good",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 933973496,
+  "bounds": {
+    "minlat": -23.5415430,
+    "minlon": -46.6419777,
+    "maxlat": -23.5413755,
+    "maxlon": -46.6416797
+  },
+  "nodes": [
+    8656410625,
+    9216158311,
+    1464768585
+  ],
+  "geometry": [
+    { "lat": -23.5415430, "lon": -46.6416797 },
+    { "lat": -23.5414888, "lon": -46.6417761 },
+    { "lat": -23.5413755, "lon": -46.6419777 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:right": "lane",
+    "cycleway:right:est_width": "1 m",
+    "cycleway:right:oneway": "no",
+    "highway": "primary",
+    "lanes": "2",
+    "lit": "yes",
+    "name": "Avenida São João",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "sidewalk": "both",
+    "source:cycleway:right": "survey",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1308332682,
+  "bounds": {
+    "minlat": -23.5422929,
+    "minlon": -46.6405892,
+    "maxlat": -23.5421585,
+    "maxlon": -46.6403522
+  },
+  "nodes": [
+    60685620,
+    6202562247,
+    6202562246
+  ],
+  "geometry": [
+    { "lat": -23.5422929, "lon": -46.6403522 },
+    { "lat": -23.5422322, "lon": -46.6404593 },
+    { "lat": -23.5421585, "lon": -46.6405892 }
+  ],
+  "tags": {
+    "bicycle": "designated",
+    "cycleway:right": "lane",
+    "cycleway:right:est_width": "1 m",
+    "cycleway:right:oneway": "no",
+    "highway": "primary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "40",
+    "name": "Avenida São João",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "sidewalk": "both",
+    "source:cycleway:right": "survey",
+    "surface": "asphalt"
+  }
+}
+
+  ]
+}
