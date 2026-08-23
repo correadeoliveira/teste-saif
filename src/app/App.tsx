@@ -6,6 +6,7 @@ import {
   Cross, Pill, ShoppingCart, Lightbulb, Layers,
   TrendingUp, Eye
 } from "lucide-react";
+import Questionnaire from "./components/Questionnaire";
 
 // ── PHOSPHOR GREEN PALETTE ──────────────────────────────────────────────────
 const G = {
@@ -1020,6 +1021,7 @@ function MapView({
 
 // ── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
+  const [showQuestionnaire, setShowQuestionnaire] = useState(true);
   const [tab,          setTab]          = useState<"mapa" | "pontos" | "stats">("mapa");
 
   // User-managed state
@@ -1102,6 +1104,10 @@ export default function App() {
           activeTimes={activeTimes} setActiveTimes={setActiveTimes}
           activeGroups={activeGroups} setActiveGroups={setActiveGroups}
         />
+        
+        {showQuestionnaire && (
+          <Questionnaire onComplete={() => setShowQuestionnaire(false)} />
+        )}
       </div>
     </>
   );
