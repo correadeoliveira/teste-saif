@@ -158,15 +158,15 @@ export class ContactsLayer {
     _createIcon(contact) {
         return L.divIcon({
             className: 'custom-marker marker-contact',
-            html: \`
+            html: `
                 <div style="display:flex;flex-direction:column;align-items:center;">
                     <div class="contact-marker-inner">
-                        <span class="contact-avatar">\${contact.avatar}</span>
-                        <span class="contact-status-dot \${contact.status}"></span>
+                        <span class="contact-avatar">${contact.avatar}</span>
+                        <span class="contact-status-dot ${contact.status}"></span>
                     </div>
-                    <span class="contact-label">\${contact.name}</span>
+                    <span class="contact-label">${contact.name}</span>
                 </div>
-            \`,
+            `,
             iconSize: [50, 52],
             iconAnchor: [25, 52],
             popupAnchor: [0, -54],
@@ -182,15 +182,15 @@ export class ContactsLayer {
 
         const batteryIcon = contact.battery > 25 ? '🔋' : '🪫';
 
-        return \`<div class="popup-inner" style="font-family:'Share Tech Mono','JetBrains Mono',monospace;">
+        return `<div class="popup-inner" style="font-family:'Share Tech Mono','JetBrains Mono',monospace;">
             <div class="popup-type" style="color:rgba(0,200,255,0.85);font-size:0.6rem;letter-spacing:0.1em;margin-bottom:4px;">
                 <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#00ff9f;margin-right:6px;box-shadow:0 0 4px #00ff9f80;"></span>CONTATO DE SEGURANÇA
             </div>
             <div style="font-size:0.85rem;font-weight:bold;color:#00b4ff;margin-bottom:2px;">
-                \${contact.avatar} \${contact.fullName}
+                ${contact.avatar} ${contact.fullName}
             </div>
             <div style="text-transform:uppercase;letter-spacing:.06em;font-size:0.6rem;color:rgba(0,200,255,0.5);margin-bottom:8px;">
-                \${contact.name}
+                ${contact.name}
             </div>
             <div style="padding-top:6px;border-top:1px solid rgba(0,180,255,0.12);">
                 <div style="font-size:0.6rem;color:#888;margin:3px 0;">
@@ -199,17 +199,17 @@ export class ContactsLayer {
                 </div>
                 <div style="font-size:0.6rem;color:#888;margin:3px 0;">
                     <span style="color:rgba(0,200,255,0.5);letter-spacing:.08em;">VISTO:</span>
-                    \${contact.lastSeen}
+                    ${contact.lastSeen}
                 </div>
                 <div style="font-size:0.6rem;color:#888;margin:3px 0;">
                     <span style="color:rgba(0,200,255,0.5);letter-spacing:.08em;">BATERIA:</span>
-                    <span style="color:\${batteryColor};">\${batteryIcon} \${contact.battery}%</span>
+                    <span style="color:${batteryColor};">${batteryIcon} ${contact.battery}%</span>
                 </div>
             </div>
             <div style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(0,180,255,0.06);font-size:0.55rem;color:rgba(0,200,255,0.4);letter-spacing:0.06em;">
                 Localização em tempo real
             </div>
-        </div>\`;
+        </div>`;
     }
 
     _createMarker(contact) {
