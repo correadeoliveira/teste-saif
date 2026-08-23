@@ -27,19 +27,28 @@ type Question = {
   options: string[];
 };
 
-// Placeholder questions
-const QUESTIONS: Question[] = [
-  { id: "1", title: "Pergunta 1: Placeholder?", options: ["Opção A", "Opção B", "Opção C"] },
-  { id: "2", title: "Pergunta 2: Placeholder?", options: ["Sim", "Não"] },
-  { id: "3", title: "Pergunta 3: Placeholder?", options: ["Muito", "Pouco", "Nada"] },
-  { id: "4", title: "Pergunta 4: Você frequenta áreas de risco?", options: ["Sempre", "Às vezes", "Raramente", "Nunca"] },
+const QUESTIONS_1_TO_4: Question[] = [
+  { id: "1", title: "1. Qual é o seu padrão diário de locomoção e uso do celular em trânsito?", options: ["Uso intensivo em transporte público", "Uso em carro (no suporte / Bluetooth)", "Caminhando bastante pela rua", "Fico a maior parte do dia parado (escritório/casa)"] },
+  { id: "2", title: "2. Em quais horários do dia você costuma ter os picos de uso mais ativos do seu aparelho?", options: ["Início da manhã e noite", "Durante todo o horário comercial", "Madrugada/Uso noturno", "Sem padrão fixo"] },
+  { id: "3", title: "3. Quais são os seus locais de rotina semanal onde o celular deve manter o menor nível de restrição?", options: ["Casa", "Trabalho", "Casa de familiares", "Academia", "Outros locais de rotina"] },
+  { id: "4", title: "4. Quem são as pessoas que eventualmente têm acesso ao seu celular desbloqueado?", options: ["Apenas eu", "Filhos/Crianças", "Cônjuge/Parceiro(a)", "Amigos/Colegas de trabalho"] },
 ];
 
 const SUB_QUESTIONS: Question[] = [
-  { id: "4.1", title: "Pergunta 4.1: Qual área?", options: ["Centro", "Zona Sul", "Zona Norte", "Outra"] },
-  { id: "4.2", title: "Pergunta 4.2: Em que horário?", options: ["Manhã", "Tarde", "Noite", "Madrugada"] },
-  { id: "4.3", title: "Pergunta 4.3: Qual meio de transporte?", options: ["A pé", "Carro", "Transporte Público"] },
-  { id: "4.4", title: "Pergunta 4.4: Se sente seguro?", options: ["Sim", "Não"] },
+  { id: "4.1", title: "4.1. Em qual situação de uso compartilhado o celular costuma estar quando na mão de terceiros?", options: ["Para assistir vídeos / jogar games", "Para fazer chamadas ou tirar fotos", "Navegação livre sob minha supervisão"] },
+  { id: "4.2", title: "4.2. Qual é a frequência com que você empresta ou deixa seu celular com outra pessoa ao longo da semana?", options: ["Diariamente", "1 a 2 vezes por semana", "Raras vezes no mês", "Nunca"] },
+  { id: "4.3", title: "4.3. Quando você empresta o celular, prefere ativar manualmente um 'Modo Visitante / Convidado'?", options: ["Sim, gostaria de um botão rápido", "Não, prefiro que o sistema identifique a mudança automaticamente"] },
+  { id: "4.4", title: "4.4. Qual deve ser a AÇÃO IMEDIATA do sistema ao detectar que outra pessoa tomou o celular da sua mão ou está usando?", options: ["Bloquear a tela imediatamente", "Bloquear apenas aplicativos sensíveis (bancos, mensagens, fotos)", "Pedir confirmação silenciosa (PIN/Digital) na próxima ação"] },
+];
+
+const QUESTIONS_5_TO_11: Question[] = [
+  { id: "5", title: "5. Com que frequência você frequenta locais de grande aglomeração ou com alto risco percebido de furto/assalto?", options: ["Diariamente", "Frequentemente nos fins de semana", "Raras vezes", "Nunca"] },
+  { id: "6", title: "6. Como o sistema deve se comportar quando você estiver fora das suas zonas de rotina?", options: ["Aumentar a rigidez da segurança", "Manter a mesma segurança padrão", "Avisar antes de aplicar bloqueios"] },
+  { id: "7", title: "7. Quais aplicativos ou dados você considera CRÍTICOS e que devem ser bloqueados instantaneamente ao menor sinal de anomalia?", options: ["Apps de bancos e carteiras digitais", "WhatsApp / E-mails / Redes Sociais", "Galeria de fotos", "Configurações do sistema", "Todos os itens anteriores"] },
+  { id: "8", title: "8. Em caso de desvio comportamental leve, como prefere ser reautenticado?", options: ["Notificação discreta pedindo biometria (Digital/Facial)", "Pedido de PIN de 4 dígitos", "Bloqueio total sem aviso"] },
+  { id: "9", title: "9. Qual o tempo limite tolerável sem uso antes de exigir validação comportamental reforçada ao pegar o aparelho?", options: ["Imediato (ao levantar o aparelho)", "Após 1 a 5 minutos", "Apenas após longos períodos (mais de 15 minutos)"] },
+  { id: "10", title: "10. Quais dispositivos do seu dia a dia podem atuar como 'Âncoras de Confiança' para impedir o bloqueio automático?", options: ["Smartwatch no pulso", "Fones de ouvido Bluetooth conectados", "Som do carro", "Nenhum"] },
+  { id: "11", title: "11. Se você estiver usando o celular para navegação GPS no carro ou moto, o sistema deve suspender o bloqueio comportamental contínuo?", options: ["Sim, manter desbloqueado enquanto o GPS estiver ativo no suporte", "Não, continuar monitorando a distância/vibração"] },
 ];
 
 export default function Questionnaire({ onComplete }: { onComplete: () => void }) {
@@ -48,8 +57,10 @@ export default function Questionnaire({ onComplete }: { onComplete: () => void }
   const [isSkipping, setIsSkipping] = useState(false);
 
   // Determine the sequence of questions based on answers
-  const showSubQuestions = answers["4"] && answers["4"].toLowerCase() !== "nunca";
-  const currentQuestions = showSubQuestions ? [...QUESTIONS, ...SUB_QUESTIONS] : QUESTIONS;
+  const showSubQuestions = answers["4"] && answers["4"] !== "Apenas eu";
+  const currentQuestions = showSubQuestions 
+    ? [...QUESTIONS_1_TO_4, ...SUB_QUESTIONS, ...QUESTIONS_5_TO_11]
+    : [...QUESTIONS_1_TO_4, ...QUESTIONS_5_TO_11];
   
   const currentQ = currentQuestions[step];
   const isLastStep = step === currentQuestions.length - 1;
