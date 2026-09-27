@@ -24,6 +24,12 @@ dist/
 data/processed/*.parquet
 data/processed/*.feather
 data/processed/*.cache
+data/features/*.parquet
+data/raw/manifest.json
+
+# Runs do pipeline (artefato estável fica em shared/heatmaps + current_run.json)
+shared/runs/**
+!shared/runs/.gitkeep
 
 # ─── Node / Expo (mobile/) ─────────────────────────────────
 node_modules/

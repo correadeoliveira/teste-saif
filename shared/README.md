@@ -14,8 +14,11 @@ shared/
     ├── heatmap_points__furto.json
     ├── heatmap_points__roubo.json
     ├── heatmap_points__outros.json
+    ├── heatmap_points__{tipo}__{periodo}.json
     ├── heatmap_grid.geojson     # Mapbox GL JS / PostGIS
     └── crimes.geojson           # pontos individuais (debug / Supabase)
+├── current_run.json             # run publicado (fingerprint, modelo, disclaimer)
+└── runs/<run_id>/               # histórico local (gitignored)
 ```
 
 ## Contratos (não quebre sem bump de versão)

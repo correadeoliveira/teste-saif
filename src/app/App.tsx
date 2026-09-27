@@ -74,8 +74,17 @@ const LIT_ZONES = [
   { cx: 50, cy: 55, r: 20, level: "médio" },
 ];
 
-const CRIME_TYPES = ["roubo", "furto", "assalto", "tráfico", "violência"];
-const TIME_SLOTS  = ["manhã", "tarde", "noite", "madrugada"];
+const CRIME_TYPES = [
+  { id: "furto", label: "furto" },
+  { id: "roubo", label: "roubo" },
+  { id: "outros", label: "outros" },
+];
+const TIME_SLOTS = [
+  { id: "manha", label: "manhã" },
+  { id: "tarde", label: "tarde" },
+  { id: "noite", label: "noite" },
+  { id: "madrugada", label: "madrugada" },
+];
 const GROUPS      = ["mulheres", "ciclistas", "idosos", "PCD", "turistas", "motoristas"];
 
 // ── UTIL: CRT glow text shadow ──────────────────────────────────────────────
@@ -595,9 +604,9 @@ function FilterSheet({
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {CRIME_TYPES.map(t => (
-                    <Chip key={t} label={t} color={G.danger}
-                      active={activeTypes.has(t)}
-                      onToggle={() => toggle(activeTypes, t, setActiveTypes)} />
+                    <Chip key={t.id} label={t.label} color={G.danger}
+                      active={activeTypes.has(t.id)}
+                      onToggle={() => toggle(activeTypes, t.id, setActiveTypes)} />
                   ))}
                 </div>
               </div>
@@ -609,9 +618,9 @@ function FilterSheet({
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {TIME_SLOTS.map(t => (
-                    <Chip key={t} label={t} color={G.warn}
-                      active={activeTimes.has(t)}
-                      onToggle={() => toggle(activeTimes, t, setActiveTimes)} />
+                    <Chip key={t.id} label={t.label} color={G.warn}
+                      active={activeTimes.has(t.id)}
+                      onToggle={() => toggle(activeTimes, t.id, setActiveTimes)} />
                   ))}
                 </div>
               </div>
@@ -967,6 +976,12 @@ function MapView({
         customSafePoints={customSafePoints}
         customRiskAreas={customRiskAreas}
       />
+      <div
+        className="absolute left-2 right-2 z-10 pointer-events-none"
+        style={{ bottom: "108px", fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: G.dim, lineHeight: 1.35 }}
+      >
+        Incidência observada de BOs georreferenciados (SSP-SP). Não é probabilidade individual nem a estatística oficial RES 160.
+      </div>
       <Scanlines />
 
       {/* HUD corners */}
@@ -1050,9 +1065,9 @@ export default function App() {
     })).sort((a, b) => a.distance - b.distance);
   }, [customSafePoints]);
   const [filterOpen,   setFilterOpen]   = useState(false);
-  const [activeTypes,  setActiveTypes]  = useState<Set<string>>(new Set(CRIME_TYPES));
+  const [activeTypes,  setActiveTypes]  = useState<Set<string>>(new Set(CRIME_TYPES.map(t => t.id)));
   const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set(["heat", "safe", "luz", "bus"]));
-  const [activeTimes,  setActiveTimes]  = useState<Set<string>>(new Set(["noite", "madrugada"]));
+  const [activeTimes,  setActiveTimes]  = useState<Set<string>>(new Set(TIME_SLOTS.map(t => t.id)));
   const [activeGroups, setActiveGroups] = useState<Set<string>>(new Set());
 
   return (

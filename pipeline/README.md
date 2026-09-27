@@ -44,22 +44,38 @@ pip install -e ".[notebooks,supabase]"     # pacote + extras
 
 ## CLI
 
-Cada script é idempotente e pode ser chamado de qualquer pasta:
+Cada comando é idempotente (SHA-256 da fonte + params do modelo).
+O app **não treina** — só consome `shared/heatmaps/*`.
 
 ```bash
-saifen-pipeline          # tudo (process + heatmap)
-saifen-process           # só xlsx → parquet + summary
-saifen-heatmap           # só parquet → heatmaps
-saifen-supabase          # opt-in: parquet/geojson → Supabase
+python -m saifen_pipeline update      # fluxo completo
+python -m saifen_pipeline ingest      # checksum + schema + manifest
+python -m saifen_pipeline preprocess  # xlsx → parquet
+python -m saifen_pipeline train       # --model kde|baseline|kriging
+python -m saifen_pipeline evaluate    # split temporal intra-2026
+python -m saifen_pipeline heatmap     # artefatos Leaflet
+python -m saifen_pipeline publish     # copia o último run para shared/heatmaps
 ```
 
-Equivalente sem instalação editável:
+Playbook para coding agents (checar XLSX → ingest → update kde → validar `shared/`):
+
+[docs/agents/heatmap-pipeline.md](../docs/agents/heatmap-pipeline.md) · [AGENTS.md](../AGENTS.md)
+
+Da raiz do monorepo:
+
+```bash
+./tools/run-pipeline.sh          # = update
+./tools/run-pipeline.sh --force
+npm run train
+```
+
+Equivalente sem `-m`:
 
 ```bash
 python pipeline/scripts/run_pipeline.py
+python pipeline/scripts/ingest.py
 python pipeline/scripts/process_xlsx.py
 python pipeline/scripts/generate_heatmap.py
-python pipeline/scripts/push_to_supabase.py
 ```
 
 ## Notebooks

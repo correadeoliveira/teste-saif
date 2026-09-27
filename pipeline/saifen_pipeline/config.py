@@ -20,13 +20,18 @@ ROOT_DIR: Path = PIPELINE_DIR.parent                        # …/saifen/
 DATA_DIR: Path = ROOT_DIR / "data"
 RAW_DIR: Path = DATA_DIR / "raw"
 PROCESSED_DIR: Path = DATA_DIR / "processed"
+FEATURES_DIR: Path = DATA_DIR / "features"
 
 # Artefatos produzidos pelo pipeline e consumidos pelos apps (web, mobile).
 # Convenção do monorepo: `shared/` é a interface entre Python e JS/TS.
 OUTPUT_DIR: Path = ROOT_DIR / "shared"
 HEATMAP_DIR: Path = OUTPUT_DIR / "heatmaps"
+RUNS_DIR: Path = OUTPUT_DIR / "runs"
+MANIFEST_PATH: Path = RAW_DIR / "manifest.json"
+CURRENT_RUN_PATH: Path = OUTPUT_DIR / "current_run.json"
+SCHEMA_DIR: Path = PIPELINE_DIR / "saifen_pipeline" / "schema"
 
-for _d in (RAW_DIR, PROCESSED_DIR, OUTPUT_DIR, HEATMAP_DIR):
+for _d in (RAW_DIR, PROCESSED_DIR, FEATURES_DIR, OUTPUT_DIR, HEATMAP_DIR, RUNS_DIR):
     _d.mkdir(parents=True, exist_ok=True)
 
 # ─── Bounding box: São Paulo capital (área útil do MVP) ────────────
@@ -65,3 +70,16 @@ TIME_SLOTS = {
 KDE_GRID_SIZE: int = 200      # 200x200 células no GeoJSON grid
 KDE_BANDWIDTH: str | float = "scott"  # 'scott' | 'silverman' | float
 KDE_MIN_DENSITY: float = 0.05  # threshold para descartar células vazias (mantém payload enxuto)
+
+# Grade ~H3 res 8 (~0,7 km²). 0.0065° ≈ 720 m na latitude de SP.
+GRID_CELL_DEG: float = 0.0065
+SOURCE_YEAR: int = 2026
+PIPELINE_VERSION: str = "0.2.0"
+
+DISCLAIMER: str = (
+    "Incidência observada de boletins de ocorrência georreferenciados. "
+    "Não é probabilidade individual nem a estatística oficial RES 160/516."
+)
+
+PERIODS: tuple[str, ...] = ("manha", "tarde", "noite", "madrugada")
+HEATMAP_CRIME_TYPES: tuple[str, ...] = ("furto", "roubo", "outros")

@@ -1,75 +1,98 @@
 // ═══════════════════════════════════════════════════
 // SAIFEN — HeatmapLoader
-// Carrega artefatos gerados pelo pipeline Python
-// (pipeline/saifen_pipeline/exporter.py → shared/heatmaps/*.json).
-//
-// Endpoints conhecidos (servidos da raiz do monorepo):
-//   /shared/heatmaps/heatmap_points.json            ← tudo
-//   /shared/heatmaps/heatmap_points__furto.json     ← só furto
-//   /shared/heatmaps/heatmap_points__roubo.json     ← só roubo
-//   /shared/heatmaps/heatmap_points__outros.json    ← outros
-//   /shared/summary.json                            ← estatísticas
-//
-// Rode `tools/dev-web.sh` na raiz: http://localhost:8000/web/
+// Artefatos: pipeline → shared/heatmaps/*.json
 // ═══════════════════════════════════════════════════
 
 const DEFAULT_HEATMAP_BASE = '/shared/heatmaps';
 const DEFAULT_SUMMARY_PATH = '/shared/summary.json';
+const DEFAULT_CURRENT_RUN = '/shared/current_run.json';
 
-// Tipos para os quais o pipeline gera arquivos fatiados.
-// Demais tipos do frontend (assalto / agressao / trafico) caem
-// no `heatmap_points.json` completo até termos fontes específicas.
 const SLICED_TYPES = new Set(['furto', 'roubo', 'outros']);
+const SLICED_PERIODS = new Set(['manha', 'tarde', 'noite', 'madrugada']);
 
 export class HeatmapLoader {
     constructor({
         heatmapBase = DEFAULT_HEATMAP_BASE,
         summaryPath = DEFAULT_SUMMARY_PATH,
+        currentRunPath = DEFAULT_CURRENT_RUN,
     } = {}) {
         this._heatmapBase = heatmapBase.replace(/\/$/, '');
         this._summaryPath = summaryPath;
+        this._currentRunPath = currentRunPath;
         this._pointsCache = new Map();
         this._summaryPromise = null;
+        this._runPromise = null;
     }
 
     static slicesAvailableFor(crimeType) {
         return SLICED_TYPES.has(crimeType);
     }
 
-    pathForType(crimeType) {
-        if (!crimeType || crimeType === 'all') {
-            return `${this._heatmapBase}/heatmap_points.json`;
+    static periodsAvailableFor(period) {
+        return SLICED_PERIODS.has(period);
+    }
+
+    pathFor(crimeType = 'all', period = 'all') {
+        const type = SLICED_TYPES.has(crimeType) ? crimeType : null;
+        const per = SLICED_PERIODS.has(period) ? period : null;
+        if (type && per) {
+            return `${this._heatmapBase}/heatmap_points__${type}__${per}.json`;
         }
-        if (SLICED_TYPES.has(crimeType)) {
-            return `${this._heatmapBase}/heatmap_points__${crimeType}.json`;
+        if (type) {
+            return `${this._heatmapBase}/heatmap_points__${type}.json`;
         }
         return `${this._heatmapBase}/heatmap_points.json`;
     }
 
-    async loadPoints(crimeType = 'all') {
-        const key = SLICED_TYPES.has(crimeType) ? crimeType : 'all';
+    async _fetchPoints(url) {
+        const res = await fetch(url, { cache: 'no-cache' });
+        if (!res.ok) {
+            throw new Error(`HeatmapLoader: HTTP ${res.status} em ${url}`);
+        }
+        const payload = await res.json();
+        return {
+            meta: payload.meta || null,
+            count: typeof payload.count === 'number'
+                ? payload.count
+                : (payload.points || []).length,
+            points: payload.points || [],
+        };
+    }
+
+    async loadPoints(crimeType = 'all', period = 'all') {
+        const typeKey = SLICED_TYPES.has(crimeType) ? crimeType : 'all';
+        const periodKey = SLICED_PERIODS.has(period) ? period : 'all';
+        const key = `${typeKey}:${periodKey}`;
         if (this._pointsCache.has(key)) {
             return this._pointsCache.get(key);
         }
-        const url = this.pathForType(key);
-        const promise = fetch(url, { cache: 'force-cache' })
-            .then((res) => {
-                if (!res.ok) {
-                    throw new Error(`HeatmapLoader: HTTP ${res.status} em ${url}`);
+
+        const candidates = [];
+        candidates.push(this.pathFor(typeKey, periodKey));
+        if (periodKey !== 'all') {
+            candidates.push(this.pathFor(typeKey, 'all'));
+        }
+        if (typeKey !== 'all' || periodKey !== 'all') {
+            candidates.push(this.pathFor('all', 'all'));
+        }
+
+        const promise = (async () => {
+            let lastErr;
+            const tried = new Set();
+            for (const url of candidates) {
+                if (tried.has(url)) continue;
+                tried.add(url);
+                try {
+                    return await this._fetchPoints(url);
+                } catch (err) {
+                    lastErr = err;
                 }
-                return res.json();
-            })
-            .then((payload) => ({
-                meta: payload.meta || null,
-                count: typeof payload.count === 'number'
-                    ? payload.count
-                    : (payload.points || []).length,
-                points: payload.points || [],
-            }))
-            .catch((err) => {
-                this._pointsCache.delete(key);
-                throw err;
-            });
+            }
+            throw lastErr || new Error('HeatmapLoader: nenhum artefato disponível');
+        })().catch((err) => {
+            this._pointsCache.delete(key);
+            throw err;
+        });
 
         this._pointsCache.set(key, promise);
         return promise;
@@ -77,7 +100,7 @@ export class HeatmapLoader {
 
     async loadSummary() {
         if (!this._summaryPromise) {
-            this._summaryPromise = fetch(this._summaryPath, { cache: 'force-cache' })
+            this._summaryPromise = fetch(this._summaryPath, { cache: 'no-cache' })
                 .then((res) => {
                     if (!res.ok) {
                         throw new Error(`HeatmapLoader: HTTP ${res.status} em ${this._summaryPath}`);
@@ -92,11 +115,20 @@ export class HeatmapLoader {
         return this._summaryPromise;
     }
 
+    async loadCurrentRun() {
+        if (!this._runPromise) {
+            this._runPromise = fetch(this._currentRunPath, { cache: 'no-cache' })
+                .then((res) => (res.ok ? res.json() : null))
+                .catch(() => null);
+        }
+        return this._runPromise;
+    }
+
     invalidate() {
         this._pointsCache.clear();
         this._summaryPromise = null;
+        this._runPromise = null;
     }
 }
 
-// Singleton conveniente — basta `import { heatmapLoader } from ...`.
 export const heatmapLoader = new HeatmapLoader();

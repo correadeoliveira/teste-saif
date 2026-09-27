@@ -1,3 +1,16 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+.leaflet-container {
+  background: #000c01 !important;
+}
+
+/* OSM invertido só no painel de tiles — o heatmap (overlay) continua verde */
+.leaflet-tile-pane .saifen-basemap {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.95) saturate(0.35);
+}
+
+.leaflet-tile-pane .saifen-basemap-nolabels {
+  filter: invert(1) hue-rotate(180deg) brightness(0.72) contrast(0.88) saturate(0.2);
+}

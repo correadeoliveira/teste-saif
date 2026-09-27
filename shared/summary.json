@@ -1,53 +1,54 @@
 {
   "meta": {
     "generator": "saifen_pipeline",
-    "generated_at": "2026-09-21T12:10:45+00:00",
-    "version": "0.1.0"
+    "generated_at": "2026-09-27T02:35:46+00:00",
+    "version": "0.2.0",
+    "disclaimer": "Incidência observada de boletins de ocorrência georreferenciados. Não é probabilidade individual nem a estatística oficial RES 160/516."
   },
-  "total_incidents": 57497,
+  "total_incidents": 55611,
   "by_crime_type": {
-    "furto": 29403,
-    "roubo": 19357,
-    "outros": 8737
+    "furto": 28476,
+    "roubo": 18863,
+    "outros": 8272
   },
   "by_period": {
-    "noite": 20537,
-    "tarde": 16178,
-    "manha": 12121,
-    "madrugada": 8477,
-    "nan": 184
+    "noite": 19804,
+    "tarde": 15665,
+    "manha": 11754,
+    "madrugada": 8223,
+    "None": 165
   },
   "top_neighborhoods": {
-    "PINHEIROS": 2206,
-    "CENTRO": 1353,
-    "BELA VISTA": 1335,
-    "VILA MARIANA": 1238,
-    "SANTO AMARO": 1125,
-    "REPUBLICA": 1048,
-    "CONSOLACAO": 1002,
-    "ITAIM BIBI": 984,
-    "BARRA FUNDA": 935,
-    "JARDIM PAULISTA": 924,
-    "CAPAO REDONDO": 838,
-    "SANTANA": 827,
-    "SANTA CECILIA": 757,
-    "LIBERDADE": 722,
-    "CONSOLAÇÃO": 711
+    "PINHEIROS": 2167,
+    "CENTRO": 1310,
+    "BELA VISTA": 1255,
+    "VILA MARIANA": 1200,
+    "SANTO AMARO": 1097,
+    "REPUBLICA": 1029,
+    "CONSOLACAO": 966,
+    "ITAIM BIBI": 958,
+    "BARRA FUNDA": 916,
+    "JARDIM PAULISTA": 867,
+    "CAPAO REDONDO": 817,
+    "SANTANA": 801,
+    "SANTA CECILIA": 742,
+    "LIBERDADE": 702,
+    "CONSOLAÇÃO": 697
   },
   "top_phone_brands": {
-    "Apple": 23838,
-    "Samsung": 16741,
-    "Motorola": 9066,
-    "Xiaomi": 5018,
-    "Outros": 2292,
-    "LG": 178,
-    "Multilaser": 91,
-    "Positivo": 83,
-    "Asus": 53,
-    "Alcatel": 29
+    "Apple": 23271,
+    "Samsung": 16135,
+    "Motorola": 8689,
+    "Xiaomi": 4839,
+    "Outros": 2209,
+    "LG": 171,
+    "Positivo": 70,
+    "Multilaser": 54,
+    "Asus": 47,
+    "Nokia": 27
   },
   "date_range": {
-    "min": "2006-12-21 00:00:00",
+    "min": "2026-01-01 00:00:00",
     "max": "2026-04-30 00:00:00"
   },
   "bbox": [
@@ -55,5 +56,14 @@
     -23.7797848,
     -46.3600511,
     -23.3900325821598
-  ]
+  ],
+  "drop_reasons": {
+    "geo_missing": 14586,
+    "geo_zero": 7237,
+    "geo_out_of_bbox": 25869,
+    "outside_source_year": 3887,
+    "duplicate_bo": 20903
+  },
+  "source": "celulares",
+  "disclaimer": "Incidência observada de boletins de ocorrência georreferenciados. Não é probabilidade individual nem a estatística oficial RES 160/516."
 }

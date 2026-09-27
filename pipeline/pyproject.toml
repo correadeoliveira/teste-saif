@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "saifen-pipeline"
-version = "0.1.0"
-description = "SAIFEN — Urban risk analysis pipeline (SSP-SP xlsx → KDE heatmap artifacts)"
+version = "0.2.0"
+description = "SAIFEN — Urban risk analysis pipeline (SSP-SP xlsx → heatmap artifacts)"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "SAIFEN team" }]
-keywords = ["geospatial", "kde", "heatmap", "ssp-sp", "ifood"]
+keywords = ["geospatial", "kde", "heatmap", "ssp-sp"]
 
 dependencies = [
     "pandas>=2.0.0",
@@ -35,15 +35,19 @@ test = ["pytest>=8.0.0", "pytest-cov>=5.0.0"]
 dev = ["ruff>=0.5.0", "saifen-pipeline[notebooks,supabase,test]"]
 
 [project.scripts]
-saifen-pipeline    = "saifen_pipeline.scripts.run_pipeline:main"
-saifen-process     = "saifen_pipeline.scripts.process_xlsx:main"
-saifen-heatmap     = "saifen_pipeline.scripts.generate_heatmap:main"
-saifen-supabase    = "saifen_pipeline.scripts.push_to_supabase:main"
+saifen-pipeline    = "saifen_pipeline.cli:main"
+saifen-process     = "saifen_pipeline.cli:preprocess_entry"
+saifen-heatmap     = "saifen_pipeline.cli:heatmap_entry"
+saifen-ingest      = "saifen_pipeline.cli:ingest_entry"
+saifen-supabase    = "saifen_pipeline.cli:supabase_entry"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["saifen_pipeline*"]
 exclude = ["tests*", "notebooks*", "scripts*"]
+
+[tool.setuptools.package-data]
+saifen_pipeline = ["schema/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -4,6 +4,7 @@ import { RouteManager } from './RouteManager.js';
 import { MarkerManager } from './MarkerManager.js';
 import { FlowLayer } from './FlowLayer.js';
 import { LightingLayer } from './LightingLayer.js';
+import { createLocalBasemap } from './LocalBasemap.js';
 
 export class CrimeMap {
     constructor() {
@@ -29,10 +30,7 @@ export class CrimeMap {
             minZoom: 11,
         });
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-            subdomains: 'abcd',
-            maxZoom: 19,
-        }).addTo(this.map);
+        createLocalBasemap(L, { labels: false }).addTo(this.map);
 
         this.heatLayer = L.heatLayer(crimeHeatData, {
             radius: 30,
@@ -72,18 +70,20 @@ export class CrimeMap {
      * @param {string} crimeType  'all' | 'furto' | 'roubo' | 'outros'
      * @returns {Promise<{count:number, source:'real'|'mock'}>}
      */
-    async loadRealHeatmap(crimeType = 'all') {
-        const datasetKey = `real:${HeatmapLoader.slicesAvailableFor(crimeType) ? crimeType : 'all'}`;
+    async loadRealHeatmap(crimeType = 'all', period = 'all') {
+        const typeKey = HeatmapLoader.slicesAvailableFor(crimeType) ? crimeType : 'all';
+        const periodKey = HeatmapLoader.periodsAvailableFor(period) ? period : 'all';
+        const datasetKey = `real:${typeKey}:${periodKey}`;
         if (datasetKey === this._currentDatasetKey) {
             return { count: this.heatLayer._latlngs?.length ?? 0, source: 'real' };
         }
         try {
-            const { points, count } = await this._heatmapLoader.loadPoints(crimeType);
+            const { points, count } = await this._heatmapLoader.loadPoints(typeKey, periodKey);
             this.heatLayer.setLatLngs(points);
             this._realDataLoaded = true;
             this._currentDatasetKey = datasetKey;
             document.dispatchEvent(new CustomEvent('heatmap:loaded', {
-                detail: { count, crimeType, source: 'real' },
+                detail: { count, crimeType: typeKey, period: periodKey, source: 'real' },
             }));
             return { count, source: 'real' };
         } catch (err) {
@@ -108,19 +108,19 @@ export class CrimeMap {
 
     _rebuildHeatmap(filters) {
         if (this._realDataLoaded) {
-            const { types } = filters;
-            // Se o usuário marcou exatamente UM tipo que temos fatiado, troca dataset.
-            // Para combinações (ou tipos sem fatia: assalto/agressao/trafico), mantém 'all'.
+            const { types, period } = filters;
             const slicedSelection =
                 types && types.length === 1 && HeatmapLoader.slicesAvailableFor(types[0])
                     ? types[0]
                     : 'all';
-            this.loadRealHeatmap(slicedSelection);
+            const periodSel =
+                period && HeatmapLoader.periodsAvailableFor(period) ? period : 'all';
+            this.loadRealHeatmap(slicedSelection, periodSel);
             return;
         }
 
         const { types, period } = filters;
-        const allTypes = ['furto', 'roubo', 'assalto', 'agressao', 'trafico'];
+        const allTypes = ['furto', 'roubo', 'outros'];
         const activeTypes = (types && types.length > 0) ? types : allTypes;
         const filtered = crimesByType.filter(c => {
             const typeOk = activeTypes.includes(c.type);

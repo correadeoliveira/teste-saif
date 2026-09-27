@@ -258,6 +258,14 @@ html, body {
     font-family: var(--font-mono) !important;
 }
 
+.leaflet-tile-pane .saifen-basemap {
+    filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.95) saturate(0.35);
+}
+
+.leaflet-tile-pane .saifen-basemap-nolabels {
+    filter: invert(1) hue-rotate(180deg) brightness(0.72) contrast(0.88) saturate(0.2);
+}
+
 .leaflet-control-zoom {
     border: none !important;
     margin: 62px 16px 0 0 !important;

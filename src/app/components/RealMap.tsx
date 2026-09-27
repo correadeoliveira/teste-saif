@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import { CrimeMap } from "../../map/CrimeMap.js";
-import { heatmapLoader } from "../../data/HeatmapLoader.js";
 
 // We keep these imports for types or just use global L
 declare global {
@@ -30,6 +29,7 @@ export function RealMap({
     if (mapContainerRef.current && !crimeMapRef.current) {
       crimeMapRef.current = new CrimeMap();
       crimeMapRef.current.init();
+      crimeMapRef.current.loadRealHeatmap("all");
     }
 
     return () => {

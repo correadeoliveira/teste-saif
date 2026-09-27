@@ -19,4 +19,5 @@ fi
 
 # shellcheck disable=SC1091
 source .venv/bin/activate
-exec python pipeline/scripts/run_pipeline.py "$@"
+export PYTHONPATH="$ROOT/pipeline${PYTHONPATH:+:$PYTHONPATH}"
+exec python -m saifen_pipeline update "$@"

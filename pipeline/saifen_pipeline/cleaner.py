@@ -2,44 +2,50 @@
 Limpeza, normalização e categorização das ocorrências SSP-SP.
 
 Responsabilidades:
-    1. Manter apenas linhas com latitude/longitude válidas e dentro da bbox.
-    2. Padronizar tipo de crime (RUBRICA -> 'furto' | 'roubo').
-    3. Padronizar período do dia (HORA_OCORRENCIA + DESCR_PERIODO ->
-       'manha' | 'tarde' | 'noite' | 'madrugada').
-    4. Normalizar string fields (BAIRRO, CIDADE em uppercase, sem espaços extras).
-    5. Reduzir o DataFrame às colunas que o pipeline downstream consome.
-
-Esse módulo é puro: recebe DataFrame, devolve DataFrame, sem I/O.
+    1. Adaptar produto (celulares | spdados) para colunas canônicas.
+    2. Marcar geo_quality sem imputar coordenadas.
+    3. Padronizar tipo de crime e período do dia.
+    4. Filtrar ano-fonte e bbox da capital.
+    5. Dedup por boletim.
 """
 
 from __future__ import annotations
 
+import hashlib
+from datetime import datetime, timezone
 from typing import Final
 
-import numpy as np
 import pandas as pd
 
 from saifen_pipeline import config
+from saifen_pipeline.adapters import detect_adapter
 
-# ── Colunas finais expostas após limpeza ─────────────────────────────
 CLEAN_COLUMNS: Final[list[str]] = [
+    "event_id",
     "lat",
     "lng",
-    "crime_type",     # 'furto' | 'roubo' | 'outros'
-    "period",         # 'manha' | 'tarde' | 'noite' | 'madrugada'
-    "occurred_at",    # datetime64[ns]
-    "neighborhood",   # str (UPPER)
-    "city",           # str (UPPER)
-    "street",         # str
-    "police_unit",    # NOME_DELEGACIA
-    "phone_brand",    # MARCA_OBJETO
-    "bo_number",      # NUM_BO (chave do boletim)
-    "source_file",    # arquivo de origem
+    "crime_type",
+    "crime_type_raw",
+    "period",
+    "occurred_at",
+    "neighborhood",
+    "city",
+    "street",
+    "police_unit",
+    "sectional",
+    "department",
+    "phone_brand",
+    "bo_number",
+    "source",
+    "source_year",
+    "source_file",
+    "geo_quality",
+    "ingestion_timestamp",
 ]
 
 
 def _to_crime_type(rubrica: str | float) -> str:
-    """Mapeia coluna RUBRICA para o vocabulário do frontend."""
+    """Mapeia natureza/RUBRICA para o vocabulário do frontend."""
     if not isinstance(rubrica, str):
         return "outros"
     r = rubrica.lower()
@@ -51,7 +57,6 @@ def _to_crime_type(rubrica: str | float) -> str:
 
 
 def _hour_to_period(hour: int | float) -> str | None:
-    """Converte hora (0-23) em bucket de período."""
     if pd.isna(hour):
         return None
     h = int(hour)
@@ -61,11 +66,10 @@ def _hour_to_period(hour: int | float) -> str | None:
         return "tarde"
     if 18 <= h < 24:
         return "noite"
-    return "madrugada"  # 0 <= h < 6
+    return "madrugada"
 
 
 def _descr_periodo_to_period(descr: str | float) -> str | None:
-    """Fallback usando DESCR_PERIODO (texto livre da SSP)."""
     if not isinstance(descr, str):
         return None
     d = descr.strip().lower()
@@ -80,16 +84,60 @@ def _descr_periodo_to_period(descr: str | float) -> str | None:
     return None
 
 
-def _resolve_period(row: pd.Series) -> str | None:
-    """
-    Decide período a partir de HORA_OCORRENCIA; cai em DESCR_PERIODO
-    se a hora estiver ausente.
-    """
-    hora = row.get(config.SSP_HORA_OCORRENCIA_COL)
-    if pd.notna(hora):
-        h = hora.hour if hasattr(hora, "hour") else int(str(hora).split(":")[0])
-        return _hour_to_period(h)
-    return _descr_periodo_to_period(row.get(config.SSP_PERIODO_COL))
+def _extract_hour(hora: object) -> int | None:
+    try:
+        if hora is None or pd.isna(hora):
+            return None
+    except (ValueError, TypeError):
+        pass
+    if hasattr(hora, "hour"):
+        h = hora.hour
+        if h is None or (isinstance(h, float) and pd.isna(h)):
+            return None
+        return int(h)
+    text = str(hora).strip()
+    if not text or text.lower() in {"nan", "nat", "none"}:
+        return None
+    try:
+        return int(text.split(":")[0])
+    except (ValueError, IndexError):
+        return None
+
+
+def _event_id(row: pd.Series) -> str:
+    key = f"{row.get('bo_number')}|{row.get('versao')}|{row.get('ano_bo')}|{row.get('lat')}|{row.get('lng')}"
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+
+
+def _is_sao_paulo_city(value: object) -> bool:
+    if not isinstance(value, str):
+        return True
+    v = (
+        value.upper()
+        .replace("Ã", "A")
+        .replace("Á", "A")
+        .replace(".", "")
+        .replace(" ", "")
+    )
+    return v in {"SAOPAULO", "SPAULO", "SAOPAULO/SP", "SÃOPAULO"} or "SAOPAULO" in v or v in {"SPAULO"}
+
+
+def _tag_geo_quality(
+    df: pd.DataFrame,
+    bbox: tuple[float, float, float, float] | None,
+) -> pd.Series:
+    lat = pd.to_numeric(df["lat"], errors="coerce")
+    lng = pd.to_numeric(df["lng"], errors="coerce")
+    quality = pd.Series("valid", index=df.index, dtype="object")
+    missing = lat.isna() | lng.isna()
+    quality.loc[missing] = "missing"
+    zero = (~missing) & ((lat == 0) | (lng == 0))
+    quality.loc[zero] = "zero"
+    if bbox is not None:
+        min_lng, min_lat, max_lng, max_lat = bbox
+        inside = lat.between(min_lat, max_lat) & lng.between(min_lng, max_lng)
+        quality.loc[(~missing) & (~zero) & (~inside)] = "out_of_bbox"
+    return quality
 
 
 def filter_bbox(
@@ -111,116 +159,114 @@ def clean(
     df_raw: pd.DataFrame,
     bbox: tuple[float, float, float, float] | None = config.SP_BBOX,
     drop_duplicate_bo: bool = True,
+    source_year: int | None = config.SOURCE_YEAR,
+    heatmap_ready: bool = True,
 ) -> pd.DataFrame:
     """
     Limpeza completa: input bruto -> DataFrame padronizado.
 
     Parameters
     ----------
-    df_raw : pd.DataFrame
-        Saída de loader.load_ssp_xlsx ou load_all_raw.
-    bbox : tuple | None
-        Bounding box para filtrar coordenadas válidas. None => sem filtro.
-    drop_duplicate_bo : bool
-        Se True (padrão), remove linhas duplicadas pelo NUM_BO+VERSAO+ANO_BO.
-        A SSP gera uma linha por objeto subtraído; isso colapsa em
-        uma linha por boletim para evitar superestimar a densidade.
-
-    Returns
-    -------
-    pd.DataFrame com colunas de CLEAN_COLUMNS.
+    heatmap_ready : bool
+        Se True (padrão), devolve só linhas com geo_quality==valid
+        (compatível com o heatmap / testes existentes).
+        Se False, mantém todas as linhas com geo_quality preenchido.
     """
-    df = df_raw.copy()
-
-    df = df.rename(
-        columns={
-            config.SSP_LAT_COL: "lat",
-            config.SSP_LNG_COL: "lng",
-        }
-    )
+    adapter = detect_adapter(df_raw)
+    df = adapter.prepare(df_raw)
+    rows_in = len(df_raw)
+    ingested_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
     df["lat"] = pd.to_numeric(df["lat"], errors="coerce")
     df["lng"] = pd.to_numeric(df["lng"], errors="coerce")
-    df = df.dropna(subset=["lat", "lng"])
-    df = df[(df["lat"] != 0) & (df["lng"] != 0)]
-    if bbox is not None:
-        df = filter_bbox(df, bbox=bbox)
+    df["geo_quality"] = _tag_geo_quality(df, bbox=bbox)
 
-    df["crime_type"] = df[config.SSP_RUBRICA_COL].map(_to_crime_type)
-    df["period"] = df.apply(_resolve_period, axis=1)
-    df["occurred_at"] = pd.to_datetime(
-        df[config.SSP_DATA_OCORRENCIA_COL], errors="coerce"
-    )
+    df["crime_type_raw"] = df["crime_type_raw"].astype("string")
+    df["crime_type"] = df["crime_type_raw"].map(_to_crime_type)
+    df["occurred_at"] = pd.to_datetime(df["occurred_at_raw"], errors="coerce")
 
-    df["neighborhood"] = (
-        df.get(config.SSP_BAIRRO_COL, pd.Series(dtype="object"))
-        .astype("string")
-        .str.strip()
-        .str.upper()
-    )
-    df["city"] = (
-        df.get(config.SSP_CIDADE_COL, pd.Series(dtype="object"))
-        .astype("string")
-        .str.strip()
-        .str.upper()
-    )
-    df["street"] = (
-        df.get(config.SSP_LOGRADOURO_COL, pd.Series(dtype="object"))
-        .astype("string")
-        .str.strip()
-    )
-    df["police_unit"] = df.get("NOME_DELEGACIA", pd.Series(dtype="object"))
-    df["phone_brand"] = df.get("MARCA_OBJETO", pd.Series(dtype="object"))
-    df["bo_number"] = df.get("NUM_BO", pd.Series(dtype="object"))
-    df["source_file"] = df.get("_source_file", pd.Series(dtype="object"))
+    hours = df["hora_raw"].map(_extract_hour)
+    from_hour = hours.map(lambda h: _hour_to_period(h) if h is not None else None)
+    from_descr = df["period_raw"].map(_descr_periodo_to_period)
+    df["period"] = from_hour.fillna(from_descr)
+
+    for col in ("neighborhood", "city", "street", "police_unit", "sectional", "department"):
+        df[col] = df[col].astype("string").str.strip()
+    df["neighborhood"] = df["neighborhood"].str.upper()
+    df["city"] = df["city"].str.upper()
+
+    df["source"] = df["_source"]
+    df["source_year"] = source_year
+    df["source_file"] = df["source_file"].astype("string")
+    df["ingestion_timestamp"] = ingested_at
+    df["event_id"] = df.apply(_event_id, axis=1)
+
+    drop_reasons: dict[str, int] = {
+        "geo_missing": int((df["geo_quality"] == "missing").sum()),
+        "geo_zero": int((df["geo_quality"] == "zero").sum()),
+        "geo_out_of_bbox": int((df["geo_quality"] == "out_of_bbox").sum()),
+    }
+
+    if source_year is not None:
+        in_year = df["occurred_at"].dt.year.eq(source_year) | df["occurred_at"].isna()
+        drop_reasons["outside_source_year"] = int((~in_year).sum())
+        df = df.loc[in_year].copy()
 
     if drop_duplicate_bo:
-        key_cols = [c for c in ("NUM_BO", "VERSAO", "ANO_BO") if c in df.columns]
-        if key_cols:
+        before = len(df)
+        key_cols = [c for c in ("bo_number", "versao", "ano_bo") if c in df.columns]
+        if key_cols and df["bo_number"].notna().any():
             df = df.drop_duplicates(subset=key_cols, keep="first")
+        drop_reasons["duplicate_bo"] = before - len(df)
 
-    out = df[CLEAN_COLUMNS].reset_index(drop=True)
-    out.attrs["rows_in"] = len(df_raw)
+    if heatmap_ready:
+        df = df.loc[df["geo_quality"] == "valid"].copy()
+
+    out = df[[c for c in CLEAN_COLUMNS if c in df.columns]].reset_index(drop=True)
+    out.attrs["rows_in"] = rows_in
     out.attrs["rows_out"] = len(out)
-    out.attrs["drop_rate"] = 1 - len(out) / max(len(df_raw), 1)
+    out.attrs["drop_rate"] = 1 - len(out) / max(rows_in, 1)
+    out.attrs["drop_reasons"] = drop_reasons
+    out.attrs["source"] = adapter.name
     return out
 
 
 def summarize(df_clean: pd.DataFrame) -> dict:
     """Sumário descritivo para arquivos output/summary.json."""
     n = len(df_clean)
-    by_type = df_clean["crime_type"].value_counts().to_dict()
-    by_period = df_clean["period"].value_counts(dropna=False).to_dict()
+    by_type = df_clean["crime_type"].value_counts().to_dict() if n else {}
+    by_period = df_clean["period"].value_counts(dropna=False).to_dict() if n else {}
     top_neigh = (
-        df_clean["neighborhood"]
-        .value_counts()
-        .head(15)
-        .to_dict()
+        df_clean["neighborhood"].value_counts().head(15).to_dict() if n else {}
     )
-    top_brands = (
-        df_clean["phone_brand"]
-        .value_counts()
-        .head(10)
-        .to_dict()
-    )
-    date_min = df_clean["occurred_at"].min()
-    date_max = df_clean["occurred_at"].max()
-    bbox_actual = (
-        float(df_clean["lng"].min()),
-        float(df_clean["lat"].min()),
-        float(df_clean["lng"].max()),
-        float(df_clean["lat"].max()),
-    )
+    top_brands: dict = {}
+    if n and "phone_brand" in df_clean.columns:
+        top_brands = (
+            df_clean["phone_brand"].dropna().value_counts().head(10).to_dict()
+        )
+    date_min = df_clean["occurred_at"].min() if n else pd.NaT
+    date_max = df_clean["occurred_at"].max() if n else pd.NaT
+    bbox_actual = [None, None, None, None]
+    if n and df_clean["lng"].notna().any():
+        bbox_actual = [
+            float(df_clean["lng"].min()),
+            float(df_clean["lat"].min()),
+            float(df_clean["lng"].max()),
+            float(df_clean["lat"].max()),
+        ]
 
     return {
         "total_incidents": n,
         "by_crime_type": {k: int(v) for k, v in by_type.items()},
         "by_period": {str(k): int(v) for k, v in by_period.items()},
-        "top_neighborhoods": {k: int(v) for k, v in top_neigh.items()},
-        "top_phone_brands": {k: int(v) for k, v in top_brands.items()},
+        "top_neighborhoods": {k: int(v) for k, v in top_neigh.items() if k is not None},
+        "top_phone_brands": {str(k): int(v) for k, v in top_brands.items()},
         "date_range": {
             "min": str(date_min) if pd.notna(date_min) else None,
             "max": str(date_max) if pd.notna(date_max) else None,
         },
-        "bbox": list(bbox_actual),
+        "bbox": bbox_actual,
+        "drop_reasons": df_clean.attrs.get("drop_reasons", {}),
+        "source": df_clean.attrs.get("source"),
+        "disclaimer": config.DISCLAIMER,
     }

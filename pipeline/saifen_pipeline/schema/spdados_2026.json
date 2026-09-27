@@ -1,0 +1,28 @@
+{
+  "product": "spdados",
+  "source_year": 2026,
+  "filename_glob": "SPDadosCriminais_*.xlsx",
+  "data_sheet_prefix": null,
+  "expected_sheets": [],
+  "required_columns": [
+    "LATITUDE",
+    "LONGITUDE"
+  ],
+  "nature_columns_any": ["NATUREZA_APURADA", "RUBRICA"],
+  "date_columns_any": ["DATA_OCORRENCIA", "DATA_OCORRENCIA_BO"],
+  "optional_columns": [
+    "HORA_OCORRENCIA",
+    "PERIODO_OCORRENCIA",
+    "BAIRRO",
+    "CIDADE",
+    "LOGRADOURO",
+    "NUMERO_LOGRADOURO",
+    "DELEGACIA_ELABORACAO",
+    "SECCIONAL_ELABORACAO",
+    "DEPARTAMENTO_ELABORACAO",
+    "NUM_BO",
+    "ANO_BO"
+  ],
+  "geo_columns": ["LATITUDE", "LONGITUDE"],
+  "notes": "Produto B da SSP (consultas): microdados georreferenciados de BOs. Schema confirmado só após inspeção do arquivo 2026; colunas listadas são as relatadas em bases 2023–2024. Não é a estatística oficial RES 160."
+}

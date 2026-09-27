@@ -102,7 +102,7 @@ export class App {
             const furto = (types.furto || 0).toLocaleString('pt-BR');
             const roubo = (types.roubo || 0).toLocaleString('pt-BR');
             const dateMax = summary.date_range?.max?.slice(0, 10) || '';
-            ctx.textContent = `SSP-SP · ${total} BOs de subtração de celular (furto: ${furto} | roubo: ${roubo})${dateMax ? ` · até ${dateMax}` : ''}`;
+            ctx.textContent = `SSP-SP · ${total} BOs georreferenciados (furto: ${furto} | roubo: ${roubo})${dateMax ? ` · até ${dateMax}` : ''} · incidência observada, não RES 160`;
             this.alertSystem?.showToast?.(`Dataset real carregado: ${total} ocorrências`, 'success');
         } else if (heatResult.source === 'real') {
             ctx.textContent = `Heatmap real carregado · ${heatResult.count.toLocaleString('pt-BR')} pontos KDE`;

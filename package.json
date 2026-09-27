@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "train": "bash tools/run-pipeline.sh",
+    "train:force": "bash tools/run-pipeline.sh --force"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

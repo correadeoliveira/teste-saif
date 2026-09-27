@@ -30,7 +30,8 @@ def _meta(extra: dict | None = None) -> dict[str, Any]:
     out = {
         "generator": "saifen_pipeline",
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "version": "0.1.0",
+        "version": config.PIPELINE_VERSION,
+        "disclaimer": config.DISCLAIMER,
     }
     if extra:
         out.update(extra)
@@ -39,13 +40,19 @@ def _meta(extra: dict | None = None) -> dict[str, Any]:
 
 def write_heatmap_points(
     points: list[list[float]],
-    path: Path = config.HEATMAP_DIR / "heatmap_points.json",
+    path: Path | None = None,
     crime_type: str = "all",
     period: str = "all",
+    extra_meta: dict | None = None,
 ) -> Path:
     """Salva pontos no formato Leaflet.heat ([[lat, lng, weight], ...])."""
+    if path is None:
+        path = config.HEATMAP_DIR / "heatmap_points.json"
+    meta_extra = {"crime_type": crime_type, "period": period}
+    if extra_meta:
+        meta_extra.update(extra_meta)
     payload = {
-        "meta": _meta({"crime_type": crime_type, "period": period}),
+        "meta": _meta(meta_extra),
         "count": len(points),
         "points": points,
     }
@@ -113,9 +120,11 @@ def grid_to_geojson(
 
 def write_heatmap_grid(
     grid: KDEGrid,
-    path: Path = config.HEATMAP_DIR / "heatmap_grid.geojson",
+    path: Path | None = None,
     min_density: float = config.KDE_MIN_DENSITY,
 ) -> Path:
+    if path is None:
+        path = config.HEATMAP_DIR / "heatmap_grid.geojson"
     fc = grid_to_geojson(grid, min_density=min_density)
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -125,7 +134,7 @@ def write_heatmap_grid(
 
 def write_crimes_geojson(
     df: pd.DataFrame,
-    path: Path = config.HEATMAP_DIR / "crimes.geojson",
+    path: Path | None = None,
     keep_cols: tuple[str, ...] = (
         "crime_type",
         "period",
@@ -135,6 +144,8 @@ def write_crimes_geojson(
     ),
 ) -> Path:
     """Exporta cada ocorrência como Point (útil para debug / camadas de marker)."""
+    if path is None:
+        path = config.HEATMAP_DIR / "crimes.geojson"
     features = []
     for row in df.itertuples(index=False):
         props = {}
@@ -172,8 +183,10 @@ def write_crimes_geojson(
 
 def write_summary(
     summary: dict,
-    path: Path = config.OUTPUT_DIR / "summary.json",
+    path: Path | None = None,
 ) -> Path:
+    if path is None:
+        path = config.OUTPUT_DIR / "summary.json"
     payload = {"meta": _meta(), **summary}
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -183,9 +196,11 @@ def write_summary(
 
 def write_processed_parquet(
     df: pd.DataFrame,
-    path: Path = config.PROCESSED_DIR / "celulares_clean.parquet",
+    path: Path | None = None,
 ) -> Path:
     """Cache local em parquet (ignored pelo git)."""
+    if path is None:
+        path = config.PROCESSED_DIR / "celulares_clean.parquet"
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(path, index=False)

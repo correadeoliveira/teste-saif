@@ -1,7 +1,7 @@
 export class FilterSystem {
     constructor() {
         this._filters = {
-            types: ['furto', 'roubo', 'assalto', 'agressao', 'trafico'],
+            types: ['furto', 'roubo', 'outros'],
             period: 'all',
             region: 'all',
         };

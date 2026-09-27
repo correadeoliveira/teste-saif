@@ -7,11 +7,9 @@ export const DEFAULT_ZOOM = 14;
 
 // ── Constantes de domínio ──
 export const crimeTypes = [
-    { id: 'furto',    label: 'Furto' },
-    { id: 'roubo',    label: 'Roubo' },
-    { id: 'assalto',  label: 'Assalto a Pedestre' },
-    { id: 'agressao', label: 'Agressão' },
-    { id: 'trafico',  label: 'Tráfico' },
+    { id: 'furto',  label: 'Furto' },
+    { id: 'roubo',  label: 'Roubo' },
+    { id: 'outros', label: 'Outros' },
 ];
 
 export const timeSlots = [

@@ -1,0 +1,27 @@
+{
+  "product": "celulares",
+  "source_year": 2026,
+  "filename_glob": "CelularesSubtraidos_*.xlsx",
+  "data_sheet_prefix": "CELULAR",
+  "expected_sheets": ["METODOLOGIA", "DICIONARIO DE DADOS"],
+  "required_columns": [
+    "LATITUDE",
+    "LONGITUDE",
+    "RUBRICA",
+    "DATA_OCORRENCIA_BO",
+    "NUM_BO",
+    "ANO_BO"
+  ],
+  "optional_columns": [
+    "HORA_OCORRENCIA",
+    "DESCR_PERIODO",
+    "BAIRRO",
+    "CIDADE",
+    "LOGRADOURO",
+    "NOME_DELEGACIA",
+    "MARCA_OBJETO",
+    "VERSAO"
+  ],
+  "geo_columns": ["LATITUDE", "LONGITUDE"],
+  "notes": "Produto C da SSP (consultas): microdados de celulares subtraídos. Não é a estatística oficial RES 160."
+}
