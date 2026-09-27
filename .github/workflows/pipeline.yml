@@ -6,6 +6,7 @@ name: pipeline · build heatmaps
 
 on:
   push:
+    branches: [main]
     paths:
       - "data/raw/**.xlsx"
       - "pipeline/**"
@@ -15,7 +16,31 @@ on:
     - cron: "0 6 * * 1"     # toda segunda 06:00 UTC
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov jsonschema ruff
+
+      - name: Tests before train
+        run: pytest -q
+
   build-heatmaps:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -39,12 +64,8 @@ jobs:
       - name: Run pipeline
         run: python scripts/run_pipeline.py --force
 
-      - name: Run tests
-        run: |
-          pip install pytest
-          pytest -q
-
       - name: Commit generated artifacts
+        if: github.ref == 'refs/heads/main'
         working-directory: ${{ github.workspace }}
         run: |
           git config user.name  "saifen-bot"

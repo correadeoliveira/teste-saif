@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://saifen.local/schema/current_run.json",
+  "title": "SAIFEN current_run",
+  "type": "object",
+  "required": ["run_id", "fingerprint", "model", "generated_at", "disclaimer"],
+  "additionalProperties": true,
+  "properties": {
+    "run_id": { "type": "string", "minLength": 1 },
+    "fingerprint": { "type": "string", "minLength": 1 },
+    "model": { "type": "string", "enum": ["kde", "baseline", "kriging"] },
+    "model_version": { "type": "string" },
+    "source_file": { "type": "string" },
+    "source_sha256": { "type": "string" },
+    "generated_at": { "type": "string", "minLength": 1 },
+    "disclaimer": { "type": "string", "minLength": 1 },
+    "heatmaps": { "type": "string" },
+    "run_dir": { "type": "string" }
+  }
+}

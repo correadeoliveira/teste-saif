@@ -17,9 +17,7 @@ def _points() -> pd.DataFrame:
             "lng": [-46.63, -46.63, -46.64, -46.65],
             "crime_type": ["furto", "furto", "roubo", "outros"],
             "period": ["manha", "manha", "noite", "tarde"],
-            "occurred_at": pd.to_datetime(
-                ["2026-01-01", "2026-02-01", "2026-03-01", "2026-04-01"]
-            ),
+            "occurred_at": pd.to_datetime(["2026-01-01", "2026-02-01", "2026-03-01", "2026-04-01"]),
         }
     )
 

@@ -8,14 +8,15 @@
 
 ```
 shared/
-├── summary.json                 # estatísticas gerais
-├── current_run.json             # run publicado (fingerprint, modelo, disclaimer)
-├── heatmaps/                    # Leaflet.heat + GeoJSON (KDE)
-├── runs/<run_id>/               # histórico local (gitignored)
+├── schema/                      # JSON Schema (CI) — não quebrar sem bump
+│   ├── heatmap_points.schema.json
+│   ├── current_run.schema.json
+│   └── behavior_model.schema.json
+├── summary.json
+├── current_run.json
+├── heatmaps/
+├── runs/<run_id>/               # gitignored
 └── behavior/
-    ├── model.json               # Logistic Regression (IMU) → app
-    ├── metrics.json
-    └── parity_fixture.json      # teste Python vs TypeScript
 ```
 
 ### `behavior/model.json`
@@ -101,3 +102,15 @@ pipeline/saifen_pipeline/exporter.py
 | `heatmap_grid.geojson` | (futuro Mapbox)                    | (futuro Mapbox)                 | `heatmap_grid` table|
 | `crimes.geojson`     | (debug)                              | (debug)                         | `crimes` table      |
 | `summary.json`       | `BootScreen.js` + `App._renderDataSourceInfo` | TBD                  | RPC `get_summary()` |
+
+## Zona crítica e pânico (app ↔ SQL)
+
+Classificação `low / medium / high / critical` (densidade KDE + contagem de BOs no raio):
+
+- Cliente: `mobile/src/services/zone.ts` (`classifyZone`)
+- Banco: RPC `zone_risk` (migration 006). Raio default 250 m, clamp `[50, 2000]`.
+- Relato: RPC `report_crime` (device_id obrigatório, 1 BO / 2 min). Offline: fila em `crimes.ts`.
+
+Não alterar limiares num lado só. Testes: `mobile/src/services/zone.test.ts` e `supabase/tests/rpcs.sql`.
+
+O CI (`pipeline-ci`) valida os JSON commitados contra `shared/schema/` — não precisa re-treinar o KDE.

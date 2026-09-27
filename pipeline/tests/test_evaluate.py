@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
 from saifen_pipeline.evaluate import evaluate_split, precision_at_fraction, temporal_split
 from saifen_pipeline.models import get_model
-import numpy as np
 
 
 def _monthly_points() -> pd.DataFrame:

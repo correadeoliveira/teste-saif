@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { CrtButton, Hud, screenStyles } from "../components/Crt";
 import { useSensorStream } from "../hooks/useSensorStream";
-import type { RootStackParamList } from "../navigation/types";
+import type { SensorsStackParamList } from "../navigation/types";
 import { effectiveHz } from "../services/imuMerge";
 import { recordGenuineSession } from "../services/profileStore";
 import { finalizeRecording } from "../services/recorder";
@@ -13,8 +13,8 @@ import { generateSyntheticImu } from "../services/syntheticImu";
 import type { ImuSample, SessionLabel } from "../services/types";
 import { DEFAULT_CAPTURE_MS, TARGET_HZ } from "../services/types";
 
-type Nav = NativeStackNavigationProp<RootStackParamList, "Collecting">;
-type R = RouteProp<RootStackParamList, "Collecting">;
+type Nav = NativeStackNavigationProp<SensorsStackParamList, "Collecting">;
+type R = RouteProp<SensorsStackParamList, "Collecting">;
 
 export function CollectingScreen() {
     const nav = useNavigation<Nav>();

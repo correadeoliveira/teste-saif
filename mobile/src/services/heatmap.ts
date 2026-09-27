@@ -10,6 +10,8 @@
  * Decida a estratégia no boot, persista em memória, refaça quando
  * o usuário pull-to-refresh.
  */
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { env, getSupabaseClient, isSupabaseConfigured } from "./supabase";
 
 export type HeatPoint = [lat: number, lng: number, weight: number];
@@ -22,6 +24,9 @@ export type HeatmapPayload = {
 };
 
 const SLICED = new Set(["furto", "roubo", "outros"]);
+const HOTSPOTS_KEY = "saifen.hotspots.v1";
+const HOTSPOT_WEIGHT = 0.4;
+const HOTSPOT_LIMIT = 600;
 
 const FALLBACK_POINTS: HeatPoint[] = [
     // Cinco hotspots conhecidos para o app rodar offline sem dados
@@ -44,10 +49,10 @@ async function tryFromSupabase(
         if (error || !data) return null;
         // RPC retorna GeoJSON FeatureCollection; aqui só extraímos centróides.
         // O cálculo real de heatmap nativo vem do react-native-maps Heatmap.
-        const fc = data as { features?: Array<{
+        const fc = data as { features?: {
             geometry: { coordinates: number[][][] };
             properties: { density: number };
-        }> };
+        }[] };
         return (fc.features ?? []).map((f) => {
             const ring = f.geometry.coordinates[0];
             const lng = ring.reduce((s, p) => s + p[0], 0) / ring.length;
@@ -77,21 +82,42 @@ async function tryFromStatic(
     }
 }
 
+export async function persistHotspots(points: HeatPoint[]): Promise<void> {
+    const sorted = [...points].sort((a, b) => b[2] - a[2]);
+    const hot = sorted.filter((p) => p[2] >= HOTSPOT_WEIGHT).slice(0, HOTSPOT_LIMIT);
+    const payload = hot.length ? hot : sorted.slice(0, 200);
+    await AsyncStorage.setItem(HOTSPOTS_KEY, JSON.stringify(payload));
+}
+
+export async function loadCachedHotspots(): Promise<HeatPoint[]> {
+    const raw = await AsyncStorage.getItem(HOTSPOTS_KEY);
+    if (!raw) return FALLBACK_POINTS;
+    try {
+        const parsed = JSON.parse(raw) as HeatPoint[];
+        return Array.isArray(parsed) && parsed.length ? parsed : FALLBACK_POINTS;
+    } catch {
+        return FALLBACK_POINTS;
+    }
+}
+
 export async function loadHeatmap(
     crimeType: HeatmapPayload["crimeType"] = "all"
 ): Promise<HeatmapPayload> {
     if (isSupabaseConfigured()) {
         const points = await tryFromSupabase(crimeType);
         if (points && points.length) {
+            await persistHotspots(points);
             return { source: "supabase", crimeType, count: points.length, points };
         }
     }
 
     const staticPts = await tryFromStatic(crimeType);
     if (staticPts && staticPts.length) {
+        await persistHotspots(staticPts);
         return { source: "static", crimeType, count: staticPts.length, points: staticPts };
     }
 
+    await persistHotspots(FALLBACK_POINTS);
     return {
         source: "fallback",
         crimeType,

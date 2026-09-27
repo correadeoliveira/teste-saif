@@ -1,22 +1,21 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { CrtButton, screenStyles } from "../components/Crt";
-import type { RootStackParamList } from "../navigation/types";
+import type { SensorsNav } from "../navigation/types";
 
-type Nav = NativeStackNavigationProp<RootStackParamList, "Home">;
+type Nav = SensorsNav<"SensorsHome">;
 
 export function HomeScreen() {
     const nav = useNavigation<Nav>();
     return (
         <View style={screenStyles.root}>
-            <Text style={screenStyles.title}>SAIFEN · HOME</Text>
+            <Text style={screenStyles.title}>SAIFEN · SENSORES</Text>
             <Text style={screenStyles.body}>
-                Mapa de risco urbano + reconhecimento comportamental por IMU. Offline no MVP.
+                Reconhecimento comportamental por IMU. Offline no MVP. O mapa fica na
+                outra aba.
             </Text>
-            <CrtButton label="MAPA" onPress={() => nav.navigate("Map")} />
             <CrtButton label="TEST SENSORS" onPress={() => nav.navigate("SensorTest")} />
             <CrtButton label="ENROLLMENT" onPress={() => nav.navigate("Enrollment")} />
             <CrtButton label="VERIFICATION" onPress={() => nav.navigate("Verification")} />

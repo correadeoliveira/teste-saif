@@ -17,6 +17,17 @@ export async function requestPermission(): Promise<boolean> {
     return status === "granted";
 }
 
+export async function requestBackgroundPermission(): Promise<boolean> {
+    const foreground = await requestPermission();
+    if (!foreground) return false;
+    try {
+        const { status } = await Location.requestBackgroundPermissionsAsync();
+        return status === "granted";
+    } catch {
+        return false;
+    }
+}
+
 export async function getCurrent(): Promise<Coords> {
     const granted = await requestPermission();
     if (!granted) return SP_FALLBACK;

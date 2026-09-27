@@ -1,24 +1,30 @@
 # `supabase/` — Banco de dados PostgreSQL + PostGIS
 
-> Schema, migrations e edge functions do SAIFEN, prontos para aplicar
-> via [Supabase CLI](https://supabase.com/docs/guides/local-development).
+> Schema e migrations do SAIFEN, aplicados via
+> [Supabase CLI](https://supabase.com/docs/guides/local-development).
 >
-> **Status:** stub. Nada está provisionado ainda — todo o sistema
-> funciona em fallback nos JSONs estáticos de `shared/heatmaps/`.
+> **Status:** schema versionado (migrations 001–006). Sem projeto cloud
+> obrigatório — web e mobile caem nos JSON de `shared/heatmaps/`. Pânico e
+> zona crítica usam RPCs quando `EXPO_PUBLIC_SUPABASE_*` está definido.
 
 ## Estrutura
 
 ```
 supabase/
-├── config.toml                       # config do Supabase CLI
-├── migrations/                       # SQL versionado, aplicado em ordem
+├── config.toml
+├── migrations/
 │   ├── 20260621000001_enable_postgis.sql
 │   ├── 20260621000002_create_crimes.sql
 │   ├── 20260621000003_create_heatmap_grid.sql
-│   └── 20260621000004_create_views_and_rpcs.sql
-├── seed.sql                          # dados mock para dev local
-└── functions/                        # edge functions (Deno)
-    └── .gitkeep
+│   ├── 20260621000004_create_views_and_rpcs.sql
+│   ├── 20260621000005_create_behavior_profiles.sql
+│   └── 20260621000006_report_crime_and_zone_risk.sql
+├── tests/
+│   ├── check_sql.py              # contrato estático (CI, sem Docker)
+│   ├── roles.sql                 # opcional: roles anon no Postgres
+│   └── rpcs.sql                  # opcional: RPCs se houver PostGIS
+├── seed.sql
+└── functions/
 ```
 
 ## Provisionamento
@@ -65,6 +71,7 @@ supabase db reset          # aplica migrations + seed.sql
 | `crimes`          | uma linha por boletim de ocorrência (POINT + metadata)    |
 | `heatmap_grid`    | células da grade KDE (POLYGON + density ∈ [0,1])          |
 | `pipeline_runs`   | histórico de execuções do pipeline (audit log)            |
+| `behavior_profiles` | cupom de enrollment IMU por device (sem JSONL bruto)    |
 
 ## RPCs (PostgreSQL functions chamadas via `client.rpc`)
 
@@ -73,20 +80,39 @@ supabase db reset          # aplica migrations + seed.sql
 | `get_heatmap_grid(type)`   | web/mobile| retorna o último heatmap_grid filtrado por tipo |
 | `get_summary()`            | web/mobile| estatísticas (`shared/summary.json` no banco)   |
 | `nearby_crimes(lat,lng,m)` | mobile    | crimes num raio de `m` metros (para alertas GPS)|
+| `report_crime(lat,lng,type,device)` | mobile | botão de pânico — INSERT rate-limited (`POST /rest/v1/rpc/report_crime`) |
+| `zone_risk(lat,lng,m)`     | mobile    | densidade KDE + contagem de BOs → low/medium/high/critical |
 
 ## Realtime
 
 A tabela `crimes` tem `replica identity FULL` para que o app mobile
-possa emitir BOs e o web reflita em tempo real (futuro).
+possa emitir BOs e o web reflita em tempo real.
 
 ## RLS
 
 Migration `20260621000004_create_views_and_rpcs.sql` habilita
 Row Level Security:
 
-- `crimes`        — SELECT público; INSERT/UPDATE/DELETE só com service_role.
+- `crimes`        — SELECT público; INSERT direto só com service_role.
+  Relatos do app passam pela RPC `report_crime` (`SECURITY DEFINER`,
+  device_id **obrigatório**, 1 BO / device / 2 min, `source_file = mobile-panic`).
+  `GRANT anon` é MVP **sem login**: o UUID do aparelho não é identidade.
 - `heatmap_grid`  — SELECT público; escrita só com service_role.
 - `pipeline_runs` — apenas service_role.
+- `behavior_profiles` — SELECT/INSERT/UPDATE anon (MVP, sem login). JSONL IMU **não** sobe.
+
+`zone_risk` clampa o raio em `[50, 2000]` m. Limiares `low/medium/high/critical`
+são os mesmos de `mobile/src/services/zone.ts`.
+
+## Testes SQL
+
+Sem Docker. Contrato estático (CI):
+
+```bash
+python3 supabase/tests/check_sql.py
+```
+
+`rpcs.sql` só faz sentido com Postgres+PostGIS; não entra no CI por enquanto.
 
 ## Re-deploy de migrations via CI
 

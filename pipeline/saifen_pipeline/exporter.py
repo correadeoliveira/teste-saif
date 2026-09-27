@@ -92,11 +92,11 @@ def grid_to_geojson(
                         "type": "Polygon",
                         "coordinates": [
                             [
-                                [x,       y],
-                                [x + dx,  y],
-                                [x + dx,  y + dy],
-                                [x,       y + dy],
-                                [x,       y],
+                                [x, y],
+                                [x + dx, y],
+                                [x + dx, y + dy],
+                                [x, y + dy],
+                                [x, y],
                             ]
                         ],
                     },
@@ -153,9 +153,7 @@ def write_crimes_geojson(
             v = getattr(row, c, None)
             if isinstance(v, (pd.Timestamp, datetime)):
                 v = v.isoformat()
-            elif isinstance(v, float) and np.isnan(v):
-                v = None
-            elif v is None or pd.isna(v):
+            elif isinstance(v, float) and np.isnan(v) or v is None or pd.isna(v):
                 v = None
             props[c] = v
 

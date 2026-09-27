@@ -68,6 +68,16 @@ web/
 Se nada estiver disponível, o app mostra a simulação local sem
 quebrar — o footer indica qual fonte está ativa.
 
+## CI
+
+[`.github/workflows/web-ci.yml`](../.github/workflows/web-ci.yml):
+
+- `tidy` em `index.html` (falha só em erros estruturais, exit ≥ 2; HTML5/UTF-8)
+- imports relativos em `web/src/` existem
+- `shared/heatmaps/heatmap_points.json` tem `meta` + `points`
+
+Playbook: [docs/agents/quality.md](../docs/agents/quality.md).
+
 ## Deploy (futuro)
 
 - **Vercel/Netlify**: configurar root como a raiz do monorepo

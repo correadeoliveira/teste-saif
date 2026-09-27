@@ -61,8 +61,8 @@ def _scores_from_model(
     grid = model.predict_grid()
     # mapa (i,j) -> density via cell_id format
     lookup: dict[str, float] = {}
-    for i, lat in enumerate(grid.yi):
-        for j, lng in enumerate(grid.xi):
+    for i, _lat in enumerate(grid.yi):
+        for j, _lng in enumerate(grid.xi):
             lookup[f"{i}:{j}"] = float(grid.zi[i, j])
     # Se a grade do modelo não coincidir com a de avaliação (KDE 200x200 vs grid ~H3),
     # amostrar a densidade no centróide mais próximo da grade do modelo.

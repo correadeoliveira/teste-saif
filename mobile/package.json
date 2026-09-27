@@ -4,7 +4,7 @@
   "description": "SAIFEN — App mobile (Expo + React Native) para análise de risco urbano em tempo real",
   "private": true,
   "engines": {
-    "node": ">=18 <23"
+    "node": ">=22.13.0"
   },
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -14,31 +14,44 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test:parity": "tsc -p tsconfig.parity.json && node scripts/parity-check.cjs"
+    "test": "node --require ./test/register-cjs.cjs --import tsx --test --test-reporter spec src/services/*.test.ts",
+    "test:zone": "node --require ./test/register-cjs.cjs --import tsx --test src/services/zone.test.ts",
+    "test:parity": "tsc -p tsconfig.parity.json && node scripts/parity-check.cjs",
+    "build:preview": "eas build --profile preview"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "2.1.0",
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-navigation/bottom-tabs": "^7.19.2",
     "@react-navigation/native": "^7.0.0",
     "@react-navigation/native-stack": "^7.0.0",
     "@supabase/supabase-js": "^2.45.0",
-    "expo": "~52.0.0",
-    "expo-asset": "~11.0.5",
-    "expo-constants": "~17.0.0",
-    "expo-file-system": "~18.0.12",
-    "expo-location": "~18.0.0",
-    "expo-sensors": "~14.0.2",
-    "expo-sharing": "~13.0.1",
-    "expo-status-bar": "~2.0.0",
-    "react": "18.3.1",
-    "react-native": "0.76.0",
-    "react-native-maps": "1.18.0",
-    "react-native-safe-area-context": "4.12.0",
-    "react-native-screens": "~4.4.0",
+    "babel-preset-expo": "~57.0.0",
+    "expo": "^57.0.25",
+    "expo-asset": "~57.0.18",
+    "expo-constants": "~57.0.19",
+    "expo-file-system": "~57.0.7",
+    "expo-location": "~57.0.20",
+    "expo-notifications": "~57.0.21",
+    "expo-sensors": "~57.0.3",
+    "expo-sharing": "~57.0.22",
+    "expo-splash-screen": "~57.0.9",
+    "expo-status-bar": "~57.0.1",
+    "expo-task-manager": "~57.0.20",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-maps": "1.27.2",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
     "react-native-url-polyfill": "^2.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
-    "@types/react": "~18.3.0",
-    "typescript": "~5.3.0"
+    "@types/node": "^22.10.0",
+    "@types/react": "~19.2.4",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
+    "tsx": "^4.19.0",
+    "typescript": "~6.0.3"
   }
 }

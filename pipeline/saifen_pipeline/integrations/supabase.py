@@ -15,7 +15,8 @@ Mantenha esse módulo idempotente. Os scripts em `pipeline/scripts/` são a
 from __future__ import annotations
 
 import os
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 from saifen_pipeline import config
 
@@ -76,7 +77,9 @@ def upsert_crimes(client, rows: Iterable[dict[str, Any]], *, chunk: int = CHUNK_
     return total
 
 
-def replace_heatmap_grid(client, features: Iterable[dict[str, Any]], *, chunk: int = CHUNK_SIZE) -> int:
+def replace_heatmap_grid(
+    client, features: Iterable[dict[str, Any]], *, chunk: int = CHUNK_SIZE
+) -> int:
     """Substitui o conteúdo da tabela `heatmap_grid` pela nova grade KDE."""
     client.table("heatmap_grid").delete().neq("id", 0).execute()
     features = list(features)

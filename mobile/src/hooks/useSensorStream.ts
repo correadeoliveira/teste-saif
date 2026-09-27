@@ -16,7 +16,10 @@ export function useSensorStream(opts?: { durationMs?: number; onComplete?: (samp
     const buffer = useRef<ImuSample[]>([]);
     const startedAt = useRef<number>(0);
     const onCompleteRef = useRef(opts?.onComplete);
-    onCompleteRef.current = opts?.onComplete;
+
+    useEffect(() => {
+        onCompleteRef.current = opts?.onComplete;
+    }, [opts?.onComplete]);
 
     const stop = useCallback(() => {
         unsub.current?.();
@@ -70,6 +73,5 @@ export function useSensorStream(opts?: { durationMs?: number; onComplete?: (samp
         count: samples.length,
         start,
         stop,
-        startedAtMs: startedAt.current,
     };
 }

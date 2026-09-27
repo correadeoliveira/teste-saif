@@ -48,11 +48,11 @@ Uso:
     python scripts/push_to_supabase.py --truncate     # apaga tabelas antes
     python scripts/push_to_supabase.py --grid-only    # só heatmap_grid
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -107,8 +107,7 @@ def _push_grid(client, truncate: bool) -> None:
     geojson_path = config.HEATMAP_DIR / "heatmap_grid.geojson"
     if not geojson_path.exists():
         print(
-            f"AVISO: {geojson_path} não existe. "
-            "Rode `python scripts/generate_heatmap.py` antes.",
+            f"AVISO: {geojson_path} não existe. Rode `python scripts/generate_heatmap.py` antes.",
             file=sys.stderr,
         )
         return
@@ -149,7 +148,9 @@ def main() -> int:
     if not args.grid_only:
         parquet = config.PROCESSED_DIR / "celulares_clean.parquet"
         if not parquet.exists():
-            print(f"ERRO: {parquet} ausente — rode `python scripts/process_xlsx.py`", file=sys.stderr)
+            print(
+                f"ERRO: {parquet} ausente — rode `python scripts/process_xlsx.py`", file=sys.stderr
+            )
             return 1
         df = pd.read_parquet(parquet)
         _push_crimes(client, df, truncate=args.truncate)

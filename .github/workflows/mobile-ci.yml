@@ -20,7 +20,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: mobile/package-lock.json
 
@@ -30,8 +30,15 @@ jobs:
       - name: TypeScript
         run: npm run typecheck
 
+      - name: Unit tests (zone, crimes, profile)
+        run: npm test
+
       - name: Inference parity (Python fixture)
         run: npm run test:parity
 
-      # Adicione `expo doctor` quando o app estiver mais maduro:
-      # - run: npx expo-doctor
+      - name: Lint
+        run: npm run lint
+
+      - name: Expo doctor
+        continue-on-error: true
+        run: npx expo-doctor

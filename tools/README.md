@@ -17,3 +17,5 @@ npm run train                    # same as run-pipeline.sh
 All scripts `cd` to the monorepo root automatically.
 
 Agent playbook (verify source → update KDE heatmap → check artifacts): [docs/agents/heatmap-pipeline.md](../docs/agents/heatmap-pipeline.md)
+
+Qualidade (pytest, ruff, CI): [docs/agents/quality.md](../docs/agents/quality.md)

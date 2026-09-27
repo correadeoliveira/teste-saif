@@ -85,7 +85,7 @@ def preprocess_cmd(args: argparse.Namespace) -> int:
     return 0
 
 
-def _load_clean() -> "pd.DataFrame":  # noqa: F821
+def _load_clean() -> pd.DataFrame:  # noqa: F821
     import pandas as pd
 
     parquet = config.PROCESSED_DIR / "celulares_clean.parquet"
@@ -113,7 +113,13 @@ def train_cmd(args: argparse.Namespace) -> int:
     model = _build_model(args)
     t0 = time.time()
     model.fit(df)
-    log_event("train.ok", model=model.name, n=len(df), duration_s=round(time.time() - t0, 2), params=model.params())
+    log_event(
+        "train.ok",
+        model=model.name,
+        n=len(df),
+        duration_s=round(time.time() - t0, 2),
+        params=model.params(),
+    )
     return 0
 
 
@@ -155,7 +161,11 @@ def publish_cmd(args: argparse.Namespace) -> int:
         return 1
     latest = runs[-1]
     meta_path = latest / "metadata.json"
-    metadata = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {"run_id": latest.name}
+    metadata = (
+        json.loads(meta_path.read_text(encoding="utf-8"))
+        if meta_path.exists()
+        else {"run_id": latest.name}
+    )
     publish.publish(latest, metadata)
     return 0
 
@@ -207,7 +217,9 @@ def update_cmd(args: argparse.Namespace) -> int:
         "geo": profile.get("geo"),
         "source_year": args.year,
         "pipeline_version": config.PIPELINE_VERSION,
-        "generated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="seconds"),
+        "generated_at": __import__("datetime")
+        .datetime.now(__import__("datetime").timezone.utc)
+        .isoformat(timespec="seconds"),
         "duration_s": round(time.time() - t0, 2),
         "disclaimer": config.DISCLAIMER,
         "source_url": "https://www.ssp.sp.gov.br/estatistica/consultas",

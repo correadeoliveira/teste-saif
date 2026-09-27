@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Wrapper: process_xlsx → saifen-pipeline preprocess."""
+
 from __future__ import annotations
 
 import sys

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Wrapper: saifen-pipeline ingest."""
+
 from __future__ import annotations
 
 import sys

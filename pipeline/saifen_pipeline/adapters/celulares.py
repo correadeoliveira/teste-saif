@@ -28,7 +28,9 @@ class CelularesAdapter:
         out["street"] = df.get("LOGRADOURO")
         out["police_unit"] = df.get("NOME_DELEGACIA")
         out["sectional"] = df.get("NOME_SECCIONAL") if "NOME_SECCIONAL" in df.columns else None
-        out["department"] = df.get("NOME_DEPARTAMENTO") if "NOME_DEPARTAMENTO" in df.columns else None
+        out["department"] = (
+            df.get("NOME_DEPARTAMENTO") if "NOME_DEPARTAMENTO" in df.columns else None
+        )
         out["phone_brand"] = df.get("MARCA_OBJETO")
         out["bo_number"] = df.get("NUM_BO")
         out["versao"] = df.get("VERSAO") if "VERSAO" in df.columns else 1

@@ -31,7 +31,7 @@ notebooks = [
     "seaborn>=0.13.0",
 ]
 supabase = ["supabase>=2.0.0"]
-test = ["pytest>=8.0.0", "pytest-cov>=5.0.0"]
+test = ["pytest>=8.0.0", "pytest-cov>=5.0.0", "jsonschema>=4.20.0"]
 dev = ["ruff>=0.5.0", "saifen-pipeline[notebooks,supabase,test]"]
 
 [project.scripts]
@@ -56,6 +56,7 @@ addopts = "-ra --strict-markers"
 [tool.ruff]
 target-version = "py39"
 line-length = 100
+extend-exclude = ["behavior", "notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "UP", "B", "C4", "SIM"]

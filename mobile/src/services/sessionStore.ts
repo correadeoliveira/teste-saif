@@ -1,4 +1,4 @@
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -28,9 +28,18 @@ export async function setSubjectId(id: string): Promise<void> {
 }
 
 export function newSessionId(): string {
+    return newUuid();
+}
+
+/** UUID v4 — PK do perfil no Supabase. */
+export function newUuid(): string {
     const g = globalThis as { crypto?: { randomUUID?: () => string } };
     if (g.crypto?.randomUUID) return g.crypto.randomUUID();
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
 }
 
 async function ensureDir(path: string): Promise<void> {

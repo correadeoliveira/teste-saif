@@ -4,10 +4,10 @@ import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { CrtButton, screenStyles } from "../components/Crt";
-import type { RootStackParamList } from "../navigation/types";
+import type { SensorsStackParamList } from "../navigation/types";
 import { modelVersion } from "../services/modelLoader";
 
-type Nav = NativeStackNavigationProp<RootStackParamList, "Verification">;
+type Nav = NativeStackNavigationProp<SensorsStackParamList, "Verification">;
 
 export function VerificationScreen() {
     const nav = useNavigation<Nav>();

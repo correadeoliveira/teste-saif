@@ -4,10 +4,12 @@ on:
   push:
     paths:
       - "web/**"
+      - "shared/heatmaps/heatmap_points.json"
       - ".github/workflows/web-ci.yml"
   pull_request:
     paths:
       - "web/**"
+      - "shared/heatmaps/heatmap_points.json"
 
 jobs:
   lint-html:
@@ -15,19 +17,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate HTML
+      - name: Validate HTML (errors only)
         run: |
-          # tidy é mais permissivo; falha apenas em erros estruturais
           sudo apt-get update -qq
           sudo apt-get install -y tidy
-          tidy -errors -q web/index.html || true
+          # tidy: 0 = ok, 1 = warnings, 2 = errors. Falhar só em erros estruturais.
+          set +e
+          tidy -utf8 -errors -q \
+            --new-blocklevel-tags "header,footer,aside,nav,section,main,button" \
+            web/index.html
+          code=$?
+          set -e
+          if [ "$code" -ge 2 ]; then
+            echo "tidy reported errors (exit $code)"
+            exit 1
+          fi
 
       - name: Sanity check imports
         run: |
-          # Confere que os imports em web/src/main.js apontam para arquivos existentes
           set -e
           missing=0
           while IFS= read -r path; do
             [[ -f "web/src/$path" || -f "web/$path" ]] || { echo "Missing: $path"; missing=1; }
           done < <(grep -rhoE "from\s+'[./].+\.js'" web/src/ | sed -E "s/from\s+'(.+)'/\1/")
           exit $missing
+
+      - name: Heatmap contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path("shared/heatmaps/heatmap_points.json")
+          assert p.is_file(), "missing shared/heatmaps/heatmap_points.json"
+          payload = json.loads(p.read_text())
+          assert isinstance(payload.get("meta"), dict), "meta object required"
+          assert "crime_type" in payload["meta"]
+          assert isinstance(payload.get("points"), list) and payload["points"], "points[] required"
+          assert isinstance(payload.get("count"), int)
+          print("heatmap_points ok", payload["meta"].get("crime_type"), "n=", payload["count"])
+          PY

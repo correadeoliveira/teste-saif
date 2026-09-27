@@ -53,9 +53,7 @@ def _build_kde(
 ) -> gaussian_kde:
     """Constrói KDE 2D (input em [lng, lat] para alinhar com xy convencional)."""
     if lats.size < 3:
-        raise ValueError(
-            f"KDE precisa de ao menos 3 pontos; recebido: {lats.size}."
-        )
+        raise ValueError(f"KDE precisa de ao menos 3 pontos; recebido: {lats.size}.")
     xy = np.vstack([lngs, lats])
     return gaussian_kde(xy, bw_method=bandwidth)
 
@@ -101,15 +99,10 @@ def point_heatmap(
     kde = _build_kde(lats_s, lngs_s, bandwidth=bandwidth)
     density = kde(np.vstack([lngs_s, lats_s]))
 
-    if density.max() > 0:
-        weights = density / density.max()
-    else:
-        weights = np.zeros_like(density)
+    peak = density.max()
+    weights = density / peak if peak > 0 else np.zeros_like(density)
 
-    return [
-        [float(la), float(ln), float(w)]
-        for la, ln, w in zip(lats_s, lngs_s, weights)
-    ]
+    return [[float(la), float(ln), float(w)] for la, ln, w in zip(lats_s, lngs_s, weights)]
 
 
 def grid_density(

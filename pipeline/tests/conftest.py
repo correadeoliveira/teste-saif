@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pandas as pd
 import pytest
 from openpyxl import Workbook
 
@@ -140,7 +139,20 @@ def write_spdados_xlsx(path: Path) -> Path:
         "ANO_BO",
     ]
     sheet.append(columns)
-    sheet.append([-23.5505, -46.6333, "Furto", "2026-01-20", "09:00:00", "SE", "SAO PAULO", "01 DP", "99", 2026])
+    sheet.append(
+        [
+            -23.5505,
+            -46.6333,
+            "Furto",
+            "2026-01-20",
+            "09:00:00",
+            "SE",
+            "SAO PAULO",
+            "01 DP",
+            "99",
+            2026,
+        ]
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
     return path

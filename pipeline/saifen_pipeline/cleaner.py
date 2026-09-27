@@ -112,14 +112,10 @@ def _event_id(row: pd.Series) -> str:
 def _is_sao_paulo_city(value: object) -> bool:
     if not isinstance(value, str):
         return True
-    v = (
-        value.upper()
-        .replace("Ã", "A")
-        .replace("Á", "A")
-        .replace(".", "")
-        .replace(" ", "")
+    v = value.upper().replace("Ã", "A").replace("Á", "A").replace(".", "").replace(" ", "")
+    return (
+        v in {"SAOPAULO", "SPAULO", "SAOPAULO/SP", "SÃOPAULO"} or "SAOPAULO" in v or v in {"SPAULO"}
     )
-    return v in {"SAOPAULO", "SPAULO", "SAOPAULO/SP", "SÃOPAULO"} or "SAOPAULO" in v or v in {"SPAULO"}
 
 
 def _tag_geo_quality(
@@ -148,10 +144,7 @@ def filter_bbox(
 ) -> pd.DataFrame:
     """Mantém apenas linhas dentro da bbox (min_lng, min_lat, max_lng, max_lat)."""
     min_lng, min_lat, max_lng, max_lat = bbox
-    mask = (
-        df[lat_col].between(min_lat, max_lat)
-        & df[lng_col].between(min_lng, max_lng)
-    )
+    mask = df[lat_col].between(min_lat, max_lat) & df[lng_col].between(min_lng, max_lng)
     return df.loc[mask].copy()
 
 
@@ -236,14 +229,10 @@ def summarize(df_clean: pd.DataFrame) -> dict:
     n = len(df_clean)
     by_type = df_clean["crime_type"].value_counts().to_dict() if n else {}
     by_period = df_clean["period"].value_counts(dropna=False).to_dict() if n else {}
-    top_neigh = (
-        df_clean["neighborhood"].value_counts().head(15).to_dict() if n else {}
-    )
+    top_neigh = df_clean["neighborhood"].value_counts().head(15).to_dict() if n else {}
     top_brands: dict = {}
     if n and "phone_brand" in df_clean.columns:
-        top_brands = (
-            df_clean["phone_brand"].dropna().value_counts().head(10).to_dict()
-        )
+        top_brands = df_clean["phone_brand"].dropna().value_counts().head(10).to_dict()
     date_min = df_clean["occurred_at"].min() if n else pd.NaT
     date_max = df_clean["occurred_at"].max() if n else pd.NaT
     bbox_actual = [None, None, None, None]

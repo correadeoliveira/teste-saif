@@ -98,8 +98,7 @@ def _detect_data_sheet(path: Path) -> str:
         if "LATITUDE" in cols and "LONGITUDE" in cols:
             return s
     raise ValueError(
-        f"Nenhuma sheet de dados com LATITUDE/LONGITUDE em {path.name}. "
-        f"Sheets: {sheets}"
+        f"Nenhuma sheet de dados com LATITUDE/LONGITUDE em {path.name}. Sheets: {sheets}"
     )
 
 
@@ -121,7 +120,9 @@ def profile_xlsx(path: Path, sample_rows: int | None = None) -> dict[str, Any]:
     n_rows = int(len(geo))
 
     lat = pd.to_numeric(geo.get("LATITUDE", geo.iloc[:, 0] if usecols else None), errors="coerce")
-    lng = pd.to_numeric(geo.get("LONGITUDE", geo.iloc[:, 1] if len(geo.columns) > 1 else None), errors="coerce")
+    lng = pd.to_numeric(
+        geo.get("LONGITUDE", geo.iloc[:, 1] if len(geo.columns) > 1 else None), errors="coerce"
+    )
     n_missing = int((lat.isna() | lng.isna()).sum())
     n_zero = int(((lat == 0) | (lng == 0)).sum())
     n_valid_raw = n_rows - n_missing - n_zero

@@ -1,13 +1,18 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { Text, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { CrtButton, Hud, screenStyles } from "../components/Crt";
-import type { RootStackParamList } from "../navigation/types";
-import { loadProfile, REQUIRED_ENROLLMENT_SESSIONS, type ProfileState } from "../services/profileStore";
+import type { SensorsStackParamList } from "../navigation/types";
+import {
+    loadProfile,
+    REQUIRED_ENROLLMENT_SESSIONS,
+    saveProfile,
+    type ProfileState,
+} from "../services/profileStore";
 
-type Nav = NativeStackNavigationProp<RootStackParamList, "Enrollment">;
+type Nav = NativeStackNavigationProp<SensorsStackParamList, "Enrollment">;
 
 export function EnrollmentScreen() {
     const nav = useNavigation<Nav>();
@@ -17,9 +22,16 @@ export function EnrollmentScreen() {
         loadProfile().then(setProfile);
     }, []);
 
-    useEffect(() => {
-        refresh();
-    }, [refresh]);
+    useFocusEffect(
+        useCallback(() => {
+            refresh();
+        }, [refresh])
+    );
+
+    const onSync = async () => {
+        const cur = await loadProfile();
+        setProfile(await saveProfile(cur));
+    };
 
     const n = profile?.genuine_sessions ?? 0;
     const required = profile?.required_sessions ?? REQUIRED_ENROLLMENT_SESSIONS;
@@ -36,13 +48,18 @@ export function EnrollmentScreen() {
                 title="PROFILE"
                 lines={[
                     `subject: ${profile?.subject_id ?? "…"}`,
+                    `device: ${profile?.device_id ?? "…"}`,
                     `sessões genuine: ${n} / ${required}`,
                     `status: ${profile?.status ?? "…"}`,
-                    ready
-                        ? "Perfil pronto para verification (modelo bundled + dados locais)."
-                        : "Continue coletando até completar o cupom de enrollment.",
+                    `supabase: ${profile?.last_sync ?? "…"}`,
+                    profile?.last_sync_error
+                        ? profile.last_sync_error
+                        : ready
+                          ? "Perfil pronto (JSONL local; cupom no Supabase se configurado)."
+                          : "Continue coletando até completar o cupom de enrollment.",
                 ]}
             />
+            <CrtButton label="SYNC SUPABASE" onPress={() => void onSync()} />
             <CrtButton
                 label="COLETAR SESSÃO"
                 onPress={() => nav.navigate("Collecting", { purpose: "enrollment", label: "genuine" })}

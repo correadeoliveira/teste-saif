@@ -6,7 +6,8 @@ from typing import Any, Literal
 
 import pandas as pd
 
-from saifen_pipeline import config, kde as kde_impl
+from saifen_pipeline import config
+from saifen_pipeline import kde as kde_impl
 from saifen_pipeline.kde import KDEGrid
 from saifen_pipeline.models.base import SpatialModel
 

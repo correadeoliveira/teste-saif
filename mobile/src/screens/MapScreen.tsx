@@ -1,21 +1,40 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Heatmap, PROVIDER_DEFAULT } from "react-native-maps";
 
+import { PanicButton } from "../components/PanicButton";
 import { colors } from "../theme/colors";
 import { loadHeatmap, type HeatmapPayload } from "../services/heatmap";
 import { getCurrent, type Coords } from "../services/location";
+import { getMonitorMode, subscribeMonitorMode, type MonitorMode } from "../services/zoneMonitor";
+import { subscribeZone } from "../services/zoneEngine";
+import { ZONE_LABEL, type ZoneSnapshot } from "../services/zone";
 
 const SP_CENTER = { latitude: -23.5505, longitude: -46.6333 };
 
 export function MapScreen() {
+    const insets = useSafeAreaInsets();
     const [heat, setHeat] = useState<HeatmapPayload | null>(null);
     const [me, setMe] = useState<Coords | null>(null);
+    const [zone, setZone] = useState<ZoneSnapshot | null>(null);
+    const [monitor, setMonitor] = useState<MonitorMode>(getMonitorMode());
 
     useEffect(() => {
         loadHeatmap("all").then(setHeat);
         getCurrent().then(setMe);
+        const offZone = subscribeZone((s) => {
+            setZone(s);
+            setMe({ lat: s.lat, lng: s.lng, accuracy: null });
+        });
+        const offMode = subscribeMonitorMode(setMonitor);
+        return () => {
+            offZone();
+            offMode();
+        };
     }, []);
+
+    const zoneColor = zone ? colors.threat[zone.level] : colors.textDim;
 
     return (
         <View style={styles.root}>
@@ -53,7 +72,7 @@ export function MapScreen() {
                 )}
             </MapView>
 
-            <View style={styles.hud}>
+            <View style={[styles.hud, { top: insets.top + 8 }]}>
                 <Text style={styles.hudTitle}>SAIFEN · MOBILE</Text>
                 <Text style={styles.hudLine}>
                     Heatmap: {heat?.source ?? "…"} · {heat?.count ?? 0} pts
@@ -61,7 +80,12 @@ export function MapScreen() {
                 <Text style={styles.hudLine}>
                     GPS: {me ? `${me.lat.toFixed(4)} | ${me.lng.toFixed(4)}` : "…"}
                 </Text>
+                <Text style={[styles.hudLine, { color: zoneColor }]}>
+                    Zona: {zone ? ZONE_LABEL[zone.level] : "…"} · alertas {monitor}
+                </Text>
             </View>
+
+            <PanicButton coords={me} />
         </View>
     );
 }
@@ -80,7 +104,6 @@ const styles = StyleSheet.create({
     root: { flex: 1, backgroundColor: colors.bg },
     hud: {
         position: "absolute",
-        top: 48,
         left: 16,
         right: 16,
         padding: 12,

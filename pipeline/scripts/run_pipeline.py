@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Wrapper: python pipeline/scripts/run_pipeline.py [--force] → saifen-pipeline update."""
+
 from __future__ import annotations
 
 import sys

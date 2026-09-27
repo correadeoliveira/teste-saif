@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Wrapper: generate_heatmap → saifen-pipeline heatmap."""
+
 from __future__ import annotations
 
 import sys

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from saifen_pipeline import config, ingest, publish
+from saifen_pipeline import ingest, publish
 from saifen_pipeline.cli import main
 
 

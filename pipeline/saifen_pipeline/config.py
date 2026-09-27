@@ -15,8 +15,8 @@ from pathlib import Path
 #     ├── pipeline/saifen_pipeline/config.py  ← este arquivo
 #     ├── data/{raw,processed}/
 #     └── shared/{heatmaps/, summary.json}
-PIPELINE_DIR: Path = Path(__file__).resolve().parents[1]   # …/pipeline/
-ROOT_DIR: Path = PIPELINE_DIR.parent                        # …/saifen/
+PIPELINE_DIR: Path = Path(__file__).resolve().parents[1]  # …/pipeline/
+ROOT_DIR: Path = PIPELINE_DIR.parent  # …/saifen/
 DATA_DIR: Path = ROOT_DIR / "data"
 RAW_DIR: Path = DATA_DIR / "raw"
 PROCESSED_DIR: Path = DATA_DIR / "processed"
@@ -60,14 +60,14 @@ CRIME_TYPES = {
 }
 
 TIME_SLOTS = {
-    "manha":     "Manhã (06h–12h)",
-    "tarde":     "Tarde (12h–18h)",
-    "noite":     "Noite (18h–00h)",
+    "manha": "Manhã (06h–12h)",
+    "tarde": "Tarde (12h–18h)",
+    "noite": "Noite (18h–00h)",
     "madrugada": "Madrugada (00h–06h)",
 }
 
 # ─── Parâmetros padrão do KDE ──────────────────────────────────────
-KDE_GRID_SIZE: int = 200      # 200x200 células no GeoJSON grid
+KDE_GRID_SIZE: int = 200  # 200x200 células no GeoJSON grid
 KDE_BANDWIDTH: str | float = "scott"  # 'scott' | 'silverman' | float
 KDE_MIN_DENSITY: float = 0.05  # threshold para descartar células vazias (mantém payload enxuto)
 

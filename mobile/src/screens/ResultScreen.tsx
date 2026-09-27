@@ -1,20 +1,19 @@
 import React, { useMemo } from "react";
 import { Text, View } from "react-native";
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { CrtButton, Hud, screenStyles } from "../components/Crt";
-import type { RootStackParamList } from "../navigation/types";
+import type { SensorsNav, SensorsStackParamList } from "../navigation/types";
 import { verifySession } from "../services/inference";
 import { loadBundledModel } from "../services/modelLoader";
 
-type Nav = NativeStackNavigationProp<RootStackParamList, "Result">;
-type R = RouteProp<RootStackParamList, "Result">;
+type Nav = SensorsNav<"Result">;
+type R = RouteProp<SensorsStackParamList, "Result">;
 
 export function ResultScreen() {
     const nav = useNavigation<Nav>();
     const { params } = useRoute<R>();
-    const samples = params?.samples ?? [];
+    const samples = useMemo(() => params?.samples ?? [], [params?.samples]);
     const result = useMemo(() => {
         const model = loadBundledModel();
         return verifySession(samples, model);
@@ -32,7 +31,7 @@ export function ResultScreen() {
                 ]}
             />
             <CrtButton label="NOVA VERIFICATION" onPress={() => nav.navigate("Verification")} />
-            <CrtButton label="HOME" onPress={() => nav.navigate("Home")} />
+            <CrtButton label="MAPA" onPress={() => nav.navigate("Map")} />
         </View>
     );
 }

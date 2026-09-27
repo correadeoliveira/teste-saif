@@ -90,12 +90,22 @@ jupyter lab pipeline/notebooks/
 | `02_limpeza.ipynb`     | roda `cleaner.clean()`, gera parquet |
 | `03_kde_heatmap.ipynb` | KDE + visualização + export `shared/heatmaps/*` |
 
-## Testes
+## Testes e CI
 
 ```bash
 cd pipeline/
-pytest
+pip install -e ".[test,dev]"
+ruff check .
+ruff format --check .
+pytest -q --cov=saifen_pipeline --cov-fail-under=50
 ```
+
+- **pipeline-ci** (PR/push em `pipeline/**`): ruff + pytest + contrato JSON em `shared/schema/`. Não gera heatmap.
+- **pipeline.yml** (só `main` / schedule / dispatch): pytest **antes** do treino KDE; commit de `shared/` só na `main`.
+
+Behavior (sklearn) é pacote irmão: `cd pipeline/behavior && pytest -q`.
+
+Playbook: [docs/agents/quality.md](../docs/agents/quality.md).
 
 ## Layout interno
 

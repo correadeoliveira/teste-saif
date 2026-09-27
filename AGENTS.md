@@ -9,6 +9,10 @@ Atualizar fonte, checar existência e regenerar heatmap no modelo vigente (**kde
 
 → **[docs/agents/heatmap-pipeline.md](docs/agents/heatmap-pipeline.md)**
 
+Qualidade (testes, ruff, CI, contrato `shared/`):
+
+→ **[docs/agents/quality.md](docs/agents/quality.md)**
+
 ## Comandos rápidos (raiz do repo)
 
 ```bash
@@ -54,14 +58,17 @@ python -c "import json; print(json.load(open('shared/current_run.json'))['model'
 | `shared/heatmaps/` | JSON Leaflet.heat (interface app) |
 | `shared/current_run.json` | run publicado + fingerprint |
 | `pipeline/saifen_pipeline/cli.py` | subcommands `ingest` … `update` |
-| `src/data/HeatmapLoader.js` | consome `/shared/heatmaps` |
+| `web/src/data/HeatmapLoader.js` | consome `/shared/heatmaps` |
+| `mobile/src/services/heatmap.ts` | fallback estático + RPC |
 
 ## Outros docs
 
+- [docs/agents/quality.md](docs/agents/quality.md) — pytest, ruff, testes mobile, supabase-ci, schemas
 - [pipeline/README.md](pipeline/README.md) — CLI, testes, notebooks
 - [data/README.md](data/README.md) — produtos SSP (não misturar RES 160 com microdados)
 - [shared/README.md](shared/README.md) — contrato dos JSON
 - [tools/README.md](tools/README.md) — `run-pipeline.sh`, `dev-web.sh`
+- [mobile/README.md](mobile/README.md) · [web/README.md](web/README.md) · [supabase/README.md](supabase/README.md)
 
 ## Regras
 

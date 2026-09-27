@@ -24,5 +24,9 @@ jobs:
           python-version: "3.11"
       - name: Install
         run: pip install -e ".[test]"
+      - name: Ruff
+        run: |
+          pip install ruff
+          ruff check --select E,F .
       - name: Pytest
         run: pytest -q

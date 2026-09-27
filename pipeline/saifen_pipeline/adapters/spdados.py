@@ -33,7 +33,9 @@ class SpDadosAdapter:
         out = pd.DataFrame(index=df.index)
         out["lat"] = df.get("LATITUDE")
         out["lng"] = df.get("LONGITUDE")
-        out["crime_type_raw"] = _first_present(df, ("NATUREZA_APURADA", "NATUREZAAPURADA", "RUBRICA"))
+        out["crime_type_raw"] = _first_present(
+            df, ("NATUREZA_APURADA", "NATUREZAAPURADA", "RUBRICA")
+        )
         out["occurred_at_raw"] = _first_present(df, ("DATA_OCORRENCIA", "DATA_OCORRENCIA_BO"))
         out["hora_raw"] = df.get("HORA_OCORRENCIA")
         out["period_raw"] = _first_present(df, ("PERIODO_OCORRENCIA", "DESCR_PERIODO"))

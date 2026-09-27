@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#000000"
-    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -20,7 +15,11 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Saifen usa sua localização para mostrar o heatmap de risco da sua região e alertá-lo sobre zonas críticas próximas.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Saifen pode monitorar em background para alertá-lo ao entrar em uma zona crítica.",
-        "NSMotionUsageDescription": "Saifen usa acelerômetro e giroscópio para aprender e verificar seu padrão de movimento no aparelho."
+        "NSLocationAlwaysUsageDescription": "Saifen monitora a localização em background para alertar ao entrar em uma zona crítica.",
+        "NSMotionUsageDescription": "Saifen usa acelerômetro e giroscópio para aprender e verificar seu padrão de movimento no aparelho.",
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
@@ -31,7 +30,13 @@
       },
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "POST_NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "WAKE_LOCK"
       ]
     },
     "web": {
@@ -41,15 +46,36 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Permitir Saifen acessar sua localização para alertas de risco em tempo real."
+          "locationWhenInUsePermission": "Permitir Saifen acessar sua localização para o mapa de risco.",
+          "locationAlwaysAndWhenInUsePermission": "Permitir Saifen acessar sua localização para alertas de risco em tempo real.",
+          "locationAlwaysPermission": "Permitir Saifen monitorar a localização em background para alertas de zona crítica.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
-      "expo-asset"
+      [
+        "expo-notifications",
+        {
+          "enableBackgroundRemoteNotifications": false
+        }
+      ],
+      "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "backgroundColor": "#000000",
+          "resizeMode": "contain",
+          "imageWidth": 200
+        }
+      ]
     ],
     "extra": {
       "eas": {
-        "projectId": "TBD"
+        "projectId": "c280f13d-5868-4944-bf47-59ea6364da5b"
       }
-    }
+    },
+    "owner": "correadeoliveira"
   }
 }
