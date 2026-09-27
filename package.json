@@ -6,6 +6,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
+    "preview": "vite preview",
     "train": "bash tools/run-pipeline.sh",
     "train:force": "bash tools/run-pipeline.sh --force"
   },

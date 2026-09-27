@@ -63,6 +63,14 @@ export default defineConfig({
     fs: {
       allow: [path.resolve(__dirname)],
     },
+    // dev em 5173, preview em 4174: 4173 fica reservado para o servidor
+    // estatico da landing SAIFEN SECURITY (~/Documentos/Projeto Padrão).
+    port: 5173,
+    strictPort: true,
+    preview: {
+      port: 4174,
+      strictPort: true,
+    },
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
