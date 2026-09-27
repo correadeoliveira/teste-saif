@@ -1,25 +1,24 @@
 import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "motion/react";
 import {
-  Shield, AlertTriangle, MapPin, Navigation, Filter,
+  Shield, AlertTriangle, MapPin, Filter,
   X, Bus, Activity, Clock, Users, BarChart3,
-  Cross, Pill, ShoppingCart, Lightbulb, Layers,
-  TrendingUp, Eye
+  Cross, Pill, ShoppingCart, Lightbulb,
+  TrendingUp
 } from "lucide-react";
 import Questionnaire from "./components/Questionnaire";
 
 // ── PHOSPHOR GREEN PALETTE ──────────────────────────────────────────────────
 const G = {
-  bright:  "#00ff41",
-  mid:     "#00cc33",
-  dim:     "#007a20",
-  faint:   "#003310",
-  bg:      "#000900",
-  panel:   "#010d02",
-  border:  "rgba(0,255,65,0.14)",
-  glow:    "rgba(0,255,65,0.6)",
+  bright:  "#ffcb00",
+  mid:     "#d9a600",
+  dim:     "#8a6d00",
+  faint:   "#3d3000",
+  bg:      "#0a0800",
+  panel:   "#0f0c00",
+  border:  "rgba(255,203,0,0.16)",
+  glow:    "rgba(255,203,0,0.6)",
   danger:  "#ff2200",
-  warn:    "#ffaa00",
+  warn:    "#ff7a1a",
   blue:    "#0099ff",
   scanline:"rgba(0,0,0,0.08)",
 };
@@ -91,15 +90,34 @@ const GROUPS      = ["mulheres", "ciclistas", "idosos", "PCD", "turistas", "moto
 const crtGlow = (color = G.bright, strength = 8) =>
   `0 0 ${strength}px ${color}, 0 0 ${strength * 2}px ${color}40`;
 
+// ── UTIL: espaço livre acima da barra de navegação ───────────────────────────
+// A BottomNav é posicionada em % da altura do app, então o espaço que ela ocupa
+// varia com a tela. Não dá para usar % no padding-bottom do scroller porque,
+// em CSS, % de padding resolve contra a LARGURA do elemento, não a altura.
+// Por isso medimos a posição real da barra e devolvemos o valor em px, com uma
+// folga para o último campo não encostar no topo da barra.
+function useBottomNavSpace(extra = 16) {
+  const [space, setSpace] = useState(0);
+  useEffect(() => {
+    const measure = () => {
+      const nav = document.querySelector("[data-bottom-nav]");
+      if (!nav) { setSpace(0); return; }
+      const navTop = nav.getBoundingClientRect().top;
+      setSpace(Math.max(0, Math.ceil(window.innerHeight - navTop)) + extra);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
+    window.addEventListener("resize", measure);
+    return () => { ro.disconnect(); window.removeEventListener("resize", measure); };
+  }, [extra]);
+  return space;
+}
+
 // ── UTIL: live ticker ────────────────────────────────────────────────────────
 function useTick(ms = 2200) {
   const [t, setT] = useState(0);
   useEffect(() => { const id = setInterval(() => setT(n => n + 1), ms); return () => clearInterval(id); }, [ms]);
-  return t;
-}
-function useTime() {
-  const [t, setT] = useState(() => new Date());
-  useEffect(() => { const id = setInterval(() => setT(new Date()), 1000); return () => clearInterval(id); }, []);
   return t;
 }
 function useLive(base: number, v: number) {
@@ -148,15 +166,10 @@ function HudCorners({ color = G.bright, size = 14, thickness = 1.5 }: { color?: 
   );
 }
 
-// ── COMPONENT: Blinking cursor ───────────────────────────────────────────────
-function Cursor({ color = G.bright }: { color?: string }) {
-  return <span style={{ color, animation: "blink 1.1s step-end infinite" }}>█</span>;
-}
-
 // ── COMPONENT: Chip ──────────────────────────────────────────────────────────
 function Chip({
   label, active, color = G.bright, onToggle,
-}: { label: string; active: boolean; color?: string; onToggle: () => void; }) {
+}: { label: string; active: boolean; color?: string; onToggle: () => void }) {
   return (
     <button
       onClick={onToggle}
@@ -389,62 +402,13 @@ function MapSVG({
 function RiskBar({ label, pct: p, color }: { label: string; pct: number; color: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-20 text-xs shrink-0" style={{ color: G.dim, fontFamily: "JetBrains Mono, monospace" }}>
+      <span className="w-20 text-xs shrink-0" style={{ color: G.dim, fontFamily: "'JetBrains Mono', monospace" }}>
         {label}
       </span>
       <div className="flex-1 h-1 rounded-none" style={{ background: G.faint }}>
         <div className="h-full transition-all duration-700" style={{ width: `${p}%`, background: color, boxShadow: `0 0 4px ${color}` }} />
       </div>
-      <span className="text-xs w-8 text-right" style={{ color, fontFamily: "JetBrains Mono, monospace" }}>{p}%</span>
-    </div>
-  );
-}
-
-// ── COMPONENT: Top bar ──────────────────────────────────────────────────────
-function TopBar({ onFilterOpen }: { onFilterOpen: () => void }) {
-  const time = useTime();
-  const fmt = (d: Date) => d.toTimeString().slice(0, 8);
-
-  return (
-    <div
-      className="flex items-center gap-2 px-3 py-2 shrink-0 relative z-20 border-b"
-      style={{
-        background: `linear-gradient(90deg, ${G.bg} 0%, #011003 50%, ${G.bg} 100%)`,
-        borderColor: G.border,
-        fontFamily: "'JetBrains Mono', monospace",
-      }}
-    >
-      {/* app name */}
-      <div className="flex items-center gap-1.5">
-        <Eye size={11} style={{ color: G.bright }} />
-        <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: G.bright, textShadow: crtGlow() }}>
-          VIGIL
-        </span>
-        <span className="text-xs" style={{ color: G.dim }}>_OS</span>
-      </div>
-
-      {/* location */}
-      <div
-        className="flex-1 flex items-center gap-1.5 px-2 py-0.5 mx-1 border"
-        style={{ borderColor: G.border, background: "rgba(0,255,65,0.04)" }}
-      >
-        <Navigation size={9} style={{ color: G.mid }} />
-        <span className="text-xs truncate" style={{ color: G.mid }}>SÃO PAULO — CENTRO</span>
-        <Cursor />
-      </div>
-
-      {/* time */}
-      <span className="text-xs shrink-0" style={{ color: G.dim }}>{fmt(time)}</span>
-
-      {/* filter */}
-      <button
-        onClick={onFilterOpen}
-        className="flex items-center gap-1 px-2 py-1 border ml-1"
-        style={{ borderColor: G.border, background: "rgba(0,255,65,0.06)", color: G.mid }}
-      >
-        <Filter size={10} />
-        <span className="text-xs">FILTROS</span>
-      </button>
+      <span className="text-xs w-8 text-right" style={{ color, fontFamily: "'JetBrains Mono', monospace" }}>{p}%</span>
     </div>
   );
 }
@@ -459,18 +423,18 @@ const QUICK = [
 
 function QuickBar({
   active, onChange,
-}: { active: Set<string>; onChange: (v: string) => void; }) {
+}: { active: Set<string>; onChange: (v: string) => void }) {
   return (
     <div
       className="absolute left-1/2 z-20 flex border"
       style={{
-        bottom: "60px",
+        bottom: "16%",
         transform: "translateX(-50%)",
-        background: "rgba(0,9,0,0.92)",
+        background: "rgba(10,8,0,0.92)",
         borderColor: G.border,
         backdropFilter: "blur(8px)",
         fontFamily: "'JetBrains Mono', monospace",
-        boxShadow: `0 0 20px rgba(0,255,65,0.08)`,
+        boxShadow: `0 0 20px rgba(255,203,0,0.08)`,
       }}
     >
       {QUICK.map(q => {
@@ -506,17 +470,29 @@ const TABS = [
 
 function BottomNav({
   active, onChange,
-}: { active: string; onChange: (v: string) => void; }) {
+}: { active: string; onChange: (v: string) => void }) {
+  // No mapa a barra é transparente para deixar o mapa aparecer por trás.
+  // Nas telas de lista o conteúdo rola sob a barra, então ela precisa ser
+  // opaca (mesma cor do fundo do app) senao os textos se sobrepõem.
+  // A faixa extra abaixo dos botões (paddingBottom) leva o mesmo fundo, para
+  // que o conteúdo da lista não reapareça no espaço entre os botões e a base.
+  const opaque = active !== "mapa";
+  const bg = opaque ? G.bg : "transparent";
+
   return (
     <div
-      className="flex border-t shrink-0"
+      data-bottom-nav
+      className="absolute left-0 right-0 z-30"
       style={{
-        borderColor: G.border,
-        background: G.bg,
+        bottom: "8%",
+        background: bg,
         fontFamily: "'JetBrains Mono', monospace",
         height: "52px",
+        paddingBottom: "12px",
+        boxSizing: "border-box",
       }}
     >
+      <div className="flex h-full">
       {TABS.map(tab => {
         const on = active === tab.id;
         return (
@@ -525,9 +501,15 @@ function BottomNav({
             onClick={() => onChange(tab.id)}
             className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150"
             style={{
-              color:     on ? G.bright : G.dim,
-              background: on ? `${G.bright}08` : "transparent",
-              borderTop: on ? `1px solid ${G.bright}` : "1px solid transparent",
+              color: on ? G.bright : G.dim,
+              background: bg,
+              textShadow: on ? `0 0 6px ${G.glow}` : "none",
+              margin: "0 3px",
+              border: `1px solid ${on ? G.bright : G.mid}`,
+              borderRadius: "2px",
+              boxShadow: on
+                ? `0 0 8px ${G.glow}, inset 0 0 10px rgba(255,203,0,0.12)`
+                : `0 0 4px rgba(255,203,0,0.18)`,
             }}
           >
             <tab.Icon size={14} style={{ filter: on ? `drop-shadow(0 0 4px ${G.bright})` : "none" }} />
@@ -535,152 +517,8 @@ function BottomNav({
           </button>
         );
       })}
+      </div>
     </div>
-  );
-}
-
-// ── COMPONENT: Filter Sheet ──────────────────────────────────────────────────
-function FilterSheet({
-  open, onClose,
-  activeTypes, setActiveTypes,
-  activeTimes, setActiveTimes,
-  activeGroups, setActiveGroups,
-}: {
-  open: boolean; onClose: () => void;
-  activeTypes: Set<string>; setActiveTypes: (s: Set<string>) => void;
-  activeTimes: Set<string>; setActiveTimes: (s: Set<string>) => void;
-  activeGroups: Set<string>; setActiveGroups: (s: Set<string>) => void;
-}) {
-  const toggle = (set: Set<string>, val: string, setter: (s: Set<string>) => void) => {
-    const next = new Set(set);
-    if (next.has(val)) next.delete(val); else next.add(val);
-    setter(next);
-  };
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            className="absolute inset-0 z-30"
-            style={{ background: "rgba(0,0,0,0.6)" }}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-          <motion.div
-            className="absolute bottom-0 left-0 right-0 z-40 border-t"
-            style={{
-              background: "#010e02",
-              borderColor: G.border,
-              fontFamily: "'JetBrains Mono', monospace",
-              maxHeight: "75%",
-              overflowY: "auto",
-            }}
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 350 }}
-          >
-            {/* drag handle */}
-            <div className="flex justify-center pt-2 pb-1">
-              <div className="w-8 h-0.5 rounded-full" style={{ background: G.dim }} />
-            </div>
-
-            <div className="flex items-center justify-between px-4 pb-3 border-b" style={{ borderColor: G.border }}>
-              <div className="flex items-center gap-2">
-                <Filter size={11} style={{ color: G.bright }} />
-                <span className="text-xs tracking-widest" style={{ color: G.bright, textShadow: crtGlow() }}>
-                  FILTROS DE CAMADA
-                </span>
-              </div>
-              <button onClick={onClose} style={{ color: G.dim }}>
-                <X size={14} />
-              </button>
-            </div>
-
-            <div className="px-4 py-3 flex flex-col gap-4">
-              {/* crime type */}
-              <div>
-                <div className="text-xs mb-2 flex items-center gap-1" style={{ color: G.dim }}>
-                  <AlertTriangle size={9} /> TIPO DE CRIME
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {CRIME_TYPES.map(t => (
-                    <Chip key={t.id} label={t.label} color={G.danger}
-                      active={activeTypes.has(t.id)}
-                      onToggle={() => toggle(activeTypes, t.id, setActiveTypes)} />
-                  ))}
-                </div>
-              </div>
-
-              {/* time */}
-              <div>
-                <div className="text-xs mb-2 flex items-center gap-1" style={{ color: G.dim }}>
-                  <Clock size={9} /> PERÍODO
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {TIME_SLOTS.map(t => (
-                    <Chip key={t.id} label={t.label} color={G.warn}
-                      active={activeTimes.has(t.id)}
-                      onToggle={() => toggle(activeTimes, t.id, setActiveTimes)} />
-                  ))}
-                </div>
-              </div>
-
-              {/* groups */}
-              <div>
-                <div className="text-xs mb-2 flex items-center gap-1" style={{ color: G.dim }}>
-                  <Users size={9} /> GRUPO DE RISCO
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {GROUPS.map(g => (
-                    <Chip key={g} label={g} color={G.mid}
-                      active={activeGroups.has(g)}
-                      onToggle={() => toggle(activeGroups, g, setActiveGroups)} />
-                  ))}
-                </div>
-              </div>
-
-              {/* group risk bars */}
-              {activeGroups.size > 0 && (
-                <div className="border-t pt-3" style={{ borderColor: G.border }}>
-                  <div className="text-xs mb-2" style={{ color: G.dim }}>ÍNDICE DE RISCO POR GRUPO</div>
-                  <div className="flex flex-col gap-2">
-                    {activeGroups.has("mulheres")  && <RiskBar label="MULHERES"  pct={78} color={G.danger} />}
-                    {activeGroups.has("ciclistas") && <RiskBar label="CICLISTAS" pct={62} color={G.warn} />}
-                    {activeGroups.has("idosos")    && <RiskBar label="IDOSOS"    pct={70} color={G.danger} />}
-                    {activeGroups.has("PCD")       && <RiskBar label="PCD"       pct={55} color={G.warn} />}
-                    {activeGroups.has("turistas")  && <RiskBar label="TURISTAS"  pct={82} color={G.danger} />}
-                    {activeGroups.has("motoristas")&& <RiskBar label="MOTORIST." pct={40} color={G.mid} />}
-                  </div>
-                </div>
-              )}
-
-              {/* save and send button */}
-              <div className="mt-2 pt-4 border-t flex justify-end" style={{ borderColor: G.border }}>
-                <button
-                  onClick={() => {
-                    const payload = { types: Array.from(activeTypes), times: Array.from(activeTimes), groups: Array.from(activeGroups) };
-                    // Dummy request simulating sending to python backend
-                    fetch('/api/save-filters', { method: 'POST', body: JSON.stringify(payload) }).catch(() => {});
-                    onClose();
-                  }}
-                  className="px-4 py-2 text-xs flex items-center gap-2 transition-all duration-150 hover:opacity-80"
-                  style={{
-                    background: G.bright,
-                    color: G.bg,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontWeight: "bold",
-                    boxShadow: `0 0 10px ${G.bright}60`,
-                  }}
-                >
-                  <AlertTriangle size={12} style={{ strokeWidth: 3 }} />
-                  ENVIAR PARA O SISTEMA
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
   );
 }
 
@@ -690,7 +528,8 @@ function SafePointsView({
   blockedSafePoints, 
   toggleBlock,
   addCustomSafePoint,
-  addCustomRiskArea
+  addCustomRiskArea,
+  bottomSpace
 }: any) {
   const [newPointName, setNewPointName] = useState("");
   const [newPointType, setNewPointType] = useState("del");
@@ -721,11 +560,11 @@ function SafePointsView({
   }[k] ?? G.dim);
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto" style={{ background: G.bg }}>
+    <div className="flex-1 flex flex-col overflow-y-auto" style={{ background: G.bg, paddingBottom: bottomSpace }}>
       <div className="px-4 py-3 border-b" style={{ borderColor: G.border }}>
         <div className="flex items-center gap-2">
           <Shield size={12} style={{ color: G.bright, filter: `drop-shadow(0 0 4px ${G.bright})` }} />
-          <span className="text-xs tracking-widest" style={{ color: G.bright, fontFamily: "'JetBrains Mono',monospace", textShadow: "0 0 8px rgba(0,255,65,0.4)" }}>
+          <span className="text-xs tracking-widest" style={{ color: G.bright, fontFamily: "'JetBrains Mono',monospace", textShadow: "0 0 8px rgba(255,203,0,0.4)" }}>
             PONTOS SEGUROS 24H
           </span>
         </div>
@@ -832,8 +671,18 @@ function SafePointsView({
   );
 }
 
-// ── COMPONENT: Stats view ────────────────────────────────────────────────────
-function StatsView() {
+// ── COMPONENT: Stats view (com filtros incorporados) ────────────────────────
+function StatsView({
+  activeTypes, setActiveTypes,
+  activeTimes, setActiveTimes,
+  activeGroups, setActiveGroups,
+  bottomSpace,
+}: {
+  activeTypes: Set<string>; setActiveTypes: (s: Set<string>) => void;
+  activeTimes: Set<string>; setActiveTimes: (s: Set<string>) => void;
+  activeGroups: Set<string>; setActiveGroups: (s: Set<string>) => void;
+  bottomSpace: number;
+}) {
   const tick = useTick(2500);
   const total = useLive(1247, 30);
 
@@ -851,8 +700,14 @@ function StatsView() {
   ];
   const maxH = Math.max(...hourData);
 
+  const toggle = (set: Set<string>, val: string, setter: (s: Set<string>) => void) => {
+    const next = new Set(set);
+    if (next.has(val)) next.delete(val); else next.add(val);
+    setter(next);
+  };
+
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto" style={{ background: G.bg }}>
+    <div className="flex-1 flex flex-col overflow-y-auto" style={{ background: G.bg, paddingBottom: bottomSpace }}>
       <div className="px-4 py-3 border-b" style={{ borderColor: G.border, fontFamily: "'JetBrains Mono',monospace" }}>
         <div className="flex items-center gap-2">
           <BarChart3 size={12} style={{ color: G.bright }} />
@@ -931,7 +786,7 @@ function StatsView() {
       </div>
 
       {/* group risk matrix */}
-      <div className="px-4 py-3">
+      <div className="px-4 py-3 border-b" style={{ borderColor: G.border }}>
         <div className="text-xs mb-3" style={{ color: G.dim, fontFamily: "'JetBrains Mono',monospace" }}>
           RISCO POR GRUPO — NOITE
         </div>
@@ -944,6 +799,94 @@ function StatsView() {
             { g: "PCD",        r: 58, c: G.warn   },
             { g: "MOTORISTAS", r: 35, c: G.mid    },
           ].map(({ g, r, c }) => <RiskBar key={g} label={g} pct={r} color={c} />)}
+        </div>
+      </div>
+
+      {/* ── FILTROS DE CAMADA ── */}
+      <div className="px-4 py-3 border-b" style={{ borderColor: G.border }}>
+        <div className="flex items-center gap-2 mb-3">
+          <Filter size={11} style={{ color: G.bright }} />
+          <span className="text-xs tracking-widest" style={{ color: G.bright, fontFamily: "'JetBrains Mono',monospace", textShadow: crtGlow() }}>
+            FILTROS DE CAMADA
+          </span>
+        </div>
+
+        {/* crime type */}
+        <div className="mb-3">
+          <div className="text-xs mb-2 flex items-center gap-1" style={{ color: G.dim, fontFamily: "'JetBrains Mono',monospace" }}>
+            <AlertTriangle size={9} /> TIPO DE CRIME
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {CRIME_TYPES.map(t => (
+              <Chip key={t.id} label={t.label} color={G.danger}
+                active={activeTypes.has(t.id)}
+                onToggle={() => toggle(activeTypes, t.id, setActiveTypes)} />
+            ))}
+          </div>
+        </div>
+
+        {/* time */}
+        <div className="mb-3">
+          <div className="text-xs mb-2 flex items-center gap-1" style={{ color: G.dim, fontFamily: "'JetBrains Mono',monospace" }}>
+            <Clock size={9} /> PERÍODO
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {TIME_SLOTS.map(t => (
+              <Chip key={t.id} label={t.label} color={G.warn}
+                active={activeTimes.has(t.id)}
+                onToggle={() => toggle(activeTimes, t.id, setActiveTimes)} />
+            ))}
+          </div>
+        </div>
+
+        {/* groups */}
+        <div className="mb-3">
+          <div className="text-xs mb-2 flex items-center gap-1" style={{ color: G.dim, fontFamily: "'JetBrains Mono',monospace" }}>
+            <Users size={9} /> GRUPO DE RISCO
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {GROUPS.map(g => (
+              <Chip key={g} label={g} color={G.mid}
+                active={activeGroups.has(g)}
+                onToggle={() => toggle(activeGroups, g, setActiveGroups)} />
+            ))}
+          </div>
+        </div>
+
+        {/* group risk bars */}
+        {activeGroups.size > 0 && (
+          <div className="border-t pt-3 mt-3" style={{ borderColor: G.border }}>
+            <div className="text-xs mb-2" style={{ color: G.dim, fontFamily: "'JetBrains Mono',monospace" }}>ÍNDICE DE RISCO POR GRUPO</div>
+            <div className="flex flex-col gap-2">
+              {activeGroups.has("mulheres")  && <RiskBar label="MULHERES"  pct={78} color={G.danger} />}
+              {activeGroups.has("ciclistas") && <RiskBar label="CICLISTAS" pct={62} color={G.warn} />}
+              {activeGroups.has("idosos")    && <RiskBar label="IDOSOS"    pct={70} color={G.danger} />}
+              {activeGroups.has("PCD")       && <RiskBar label="PCD"       pct={55} color={G.warn} />}
+              {activeGroups.has("turistas")  && <RiskBar label="TURISTAS"  pct={82} color={G.danger} />}
+              {activeGroups.has("motoristas")&& <RiskBar label="MOTORIST." pct={40} color={G.mid} />}
+            </div>
+          </div>
+        )}
+
+        {/* save and send button */}
+        <div className="mt-3 pt-4 border-t flex justify-end" style={{ borderColor: G.border }}>
+          <button
+            onClick={() => {
+              const payload = { types: Array.from(activeTypes), times: Array.from(activeTimes), groups: Array.from(activeGroups) };
+              fetch('/api/save-filters', { method: 'POST', body: JSON.stringify(payload) }).catch(() => {});
+            }}
+            className="px-4 py-2 text-xs flex items-center gap-2 transition-all duration-150 hover:opacity-80"
+            style={{
+              background: G.bright,
+              color: G.bg,
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: "bold",
+              boxShadow: `0 0 10px ${G.bright}60`,
+            }}
+          >
+            <AlertTriangle size={12} style={{ strokeWidth: 3 }} />
+            ENVIAR PARA O SISTEMA
+          </button>
         </div>
       </div>
     </div>
@@ -962,8 +905,6 @@ function MapView({
   activeTimes: Set<string>;
   blockedSafePoints: Set<string>; customSafePoints: any[]; customRiskAreas: any[];
 }) {
-  const incidents = useLive(14, 4);
-
   return (
     <div className="flex-1 relative overflow-hidden">
       {/* real map */}
@@ -976,50 +917,10 @@ function MapView({
         customSafePoints={customSafePoints}
         customRiskAreas={customRiskAreas}
       />
-      <div
-        className="absolute left-2 right-2 z-10 pointer-events-none"
-        style={{ bottom: "108px", fontFamily: "'JetBrains Mono', monospace", fontSize: 8, color: G.dim, lineHeight: 1.35 }}
-      >
-        Incidência observada de BOs georreferenciados (SSP-SP). Não é probabilidade individual nem a estatística oficial RES 160.
-      </div>
       <Scanlines />
 
       {/* HUD corners */}
       <HudCorners size={18} />
-
-      {/* top-left HUD info */}
-      <div
-        className="absolute top-2 left-2 z-10 text-xs px-2 py-1 border"
-        style={{
-          background: "rgba(0,9,0,0.85)",
-          borderColor: G.border,
-          fontFamily: "'JetBrains Mono',monospace",
-          backdropFilter: "blur(4px)",
-        }}
-      >
-        <div className="flex items-center gap-1.5">
-          <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: G.danger, boxShadow: `0 0 4px ${G.danger}`, animation: "blink 1.4s ease infinite" }} />
-          <span style={{ color: G.danger }}>{Math.round(incidents)} OCORR/H</span>
-        </div>
-        <div className="mt-0.5" style={{ color: G.dim }}>RISCO: ALTO</div>
-      </div>
-
-      {/* top-right active layer badge */}
-      <div
-        className="absolute top-2 right-2 z-10 text-xs px-2 py-1 border"
-        style={{
-          background: "rgba(0,9,0,0.85)",
-          borderColor: G.border,
-          fontFamily: "'JetBrains Mono',monospace",
-          backdropFilter: "blur(4px)",
-          color: G.mid,
-        }}
-      >
-        <div className="flex items-center gap-1">
-          <Layers size={9} style={{ color: G.mid }} />
-          {Array.from(activeLayers).map(l => l.toUpperCase()).join(", ")}
-        </div>
-      </div>
 
       {/* quick toggles (bottom center) */}
       <QuickBar
@@ -1038,6 +939,10 @@ function MapView({
 export default function App() {
   const [showQuestionnaire, setShowQuestionnaire] = useState(true);
   const [tab,          setTab]          = useState<"mapa" | "pontos" | "stats">("mapa");
+
+  // Espaço a reservar no fim das listas para a barra flutuante não cobrir
+  // o último campo / botão de ação.
+  const bottomSpace = useBottomNavSpace();
 
   // User-managed state
   const [blockedSafePoints, setBlockedSafePoints] = useState<Set<string>>(new Set());
@@ -1064,9 +969,10 @@ export default function App() {
       distance: getDistance(SP_CENTER[0], SP_CENTER[1], sp.lat, sp.lng)
     })).sort((a, b) => a.distance - b.distance);
   }, [customSafePoints]);
-  const [filterOpen,   setFilterOpen]   = useState(false);
+
+  // Filter states
   const [activeTypes,  setActiveTypes]  = useState<Set<string>>(new Set(CRIME_TYPES.map(t => t.id)));
-  const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set(["heat", "safe", "luz", "bus"]));
+  const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set());
   const [activeTimes,  setActiveTimes]  = useState<Set<string>>(new Set(TIME_SLOTS.map(t => t.id)));
   const [activeGroups, setActiveGroups] = useState<Set<string>>(new Set());
 
@@ -1075,7 +981,7 @@ export default function App() {
       <style>{`
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
         * { box-sizing: border-box; }
-        body { background: #000900; overflow: hidden; }
+        body { background: #0a0800; overflow: hidden; }
         ::-webkit-scrollbar { width: 2px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: ${G.faint}; }
@@ -1085,8 +991,6 @@ export default function App() {
         className="size-full flex flex-col overflow-hidden relative"
         style={{ background: G.bg, fontFamily: "'JetBrains Mono', monospace", maxWidth: "430px", margin: "0 auto" }}
       >
-        <TopBar onFilterOpen={() => setFilterOpen(true)} />
-
         {/* main content */}
         {tab === "mapa" && (
           <MapView
@@ -1106,19 +1010,21 @@ export default function App() {
           toggleBlock={toggleBlock}
           addCustomSafePoint={addCustomSafePoint}
           addCustomRiskArea={addCustomRiskArea}
+          bottomSpace={bottomSpace}
         />}
-        {tab === "stats"  && <StatsView />}
+        {tab === "stats" && (
+          <StatsView
+            activeTypes={activeTypes}
+            setActiveTypes={setActiveTypes}
+            activeTimes={activeTimes}
+            setActiveTimes={setActiveTimes}
+            activeGroups={activeGroups}
+            setActiveGroups={setActiveGroups}
+            bottomSpace={bottomSpace}
+          />
+        )}
 
         <BottomNav active={tab} onChange={v => setTab(v as typeof tab)} />
-
-        {/* filter bottom sheet */}
-        <FilterSheet
-          open={filterOpen}
-          onClose={() => setFilterOpen(false)}
-          activeTypes={activeTypes} setActiveTypes={setActiveTypes}
-          activeTimes={activeTimes} setActiveTimes={setActiveTimes}
-          activeGroups={activeGroups} setActiveGroups={setActiveGroups}
-        />
         
         {showQuestionnaire && (
           <Questionnaire onComplete={() => setShowQuestionnaire(false)} />

@@ -3,16 +3,16 @@ import { motion, AnimatePresence } from "motion/react";
 import { Shield, AlertTriangle, Check, X } from "lucide-react";
 
 const G = {
-  bright:  "#00ff41",
-  mid:     "#00cc33",
-  dim:     "#007a20",
-  faint:   "#003310",
-  bg:      "#000900",
-  panel:   "#010d02",
-  border:  "rgba(0,255,65,0.14)",
-  glow:    "rgba(0,255,65,0.6)",
+  bright:  "#ffcb00",
+  mid:     "#d9a600",
+  dim:     "#8a6d00",
+  faint:   "#3d3000",
+  bg:      "#0a0800",
+  panel:   "#0f0c00",
+  border:  "rgba(255,203,0,0.14)",
+  glow:    "rgba(255,203,0,0.6)",
   danger:  "#ff2200",
-  warn:    "#ffaa00",
+  warn:    "#ff7a1a",
   blue:    "#0099ff",
   scanline:"rgba(0,0,0,0.08)",
 };
@@ -111,7 +111,7 @@ export default function Questionnaire({ onComplete }: { onComplete: () => void }
             className="w-full max-w-md border flex flex-col relative z-10"
             style={{
               borderColor: G.bright,
-              background: "#010d02",
+              background: "#0f0c00",
               boxShadow: `0 0 20px ${G.glow}`,
             }}
             initial={{ scale: 0.95, y: 20, opacity: 0 }}
@@ -119,7 +119,7 @@ export default function Questionnaire({ onComplete }: { onComplete: () => void }
             exit={{ scale: 0.95, y: -20, opacity: 0 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: G.border, background: "rgba(0,255,65,0.05)" }}>
+            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: G.border, background: "rgba(255,203,0,0.05)" }}>
               <div className="flex items-center gap-2">
                 <Shield size={16} style={{ color: G.bright }} />
                 <span className="text-sm tracking-widest font-bold" style={{ color: G.bright, textShadow: crtGlow() }}>
@@ -218,7 +218,7 @@ export default function Questionnaire({ onComplete }: { onComplete: () => void }
               <button 
                 onClick={cancelSkip}
                 className="flex-1 py-3 text-sm font-bold uppercase tracking-widest border-r transition-colors"
-                style={{ borderColor: "rgba(255,34,0,0.2)", color: G.bright, background: "rgba(0,255,65,0.05)" }}
+                style={{ borderColor: "rgba(255,34,0,0.2)", color: G.bright, background: "rgba(255,203,0,0.05)" }}
               >
                 Voltar
               </button>
