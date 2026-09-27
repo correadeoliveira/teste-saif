@@ -893,6 +893,81 @@ function StatsView({
   );
 }
 
+// ── COMPONENT: Risk legend ───────────────────────────────────────────────────
+// Mostra as faixas de risco com os cortes REAIS daquela fatia, para que a
+// leitura do heatmap não dependa de adivinhação de cor.
+function RiskLegend({ scale, crimeType, period }: { scale: any; crimeType: string; period: string }) {
+  const [open, setOpen] = useState(true);
+  if (!scale) return null;
+
+  const slice = [
+    crimeType && crimeType !== "all" ? crimeType.toUpperCase() : null,
+    period && period !== "all" ? period.toUpperCase() : null,
+  ].filter(Boolean).join(" · ") || "TODOS";
+
+  return (
+    <div
+      className="absolute left-2 z-20 w-[186px] border"
+      style={{
+        background: "rgba(10,8,0,0.90)",
+        borderColor: G.border,
+        backdropFilter: "blur(6px)",
+        fontFamily: "'JetBrains Mono', monospace",
+        top: 8,
+        boxShadow: "0 0 16px rgba(0,0,0,0.6)",
+      }}
+    >
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full px-2.5 py-1.5 flex items-center justify-between gap-2 border-b"
+        style={{ borderColor: G.border }}
+      >
+        <span className="text-[9px] tracking-widest" style={{ color: G.bright }}>RISCO</span>
+        <span className="text-[8px] truncate" style={{ color: G.dim }}>{slice}</span>
+        <span className="text-[8px] shrink-0" style={{ color: G.dim }}>{open ? "▾" : "▸"}</span>
+      </button>
+
+      {open && (
+        <div className="p-2.5 flex flex-col gap-1.5">
+          {/* rampa contínua, na proporção real das faixas */}
+          <div className="h-2 w-full flex overflow-hidden" style={{ border: `1px solid ${G.faint}` }}>
+            {scale.bands.map((b: any) => (
+              <div
+                key={b.id}
+                style={{ background: b.color, width: `${b.share * 100}%`, opacity: 0.9 }}
+              />
+            ))}
+          </div>
+
+          {scale.bands.map((b: any) => (
+            <div key={b.id} className="flex items-center gap-1.5">
+              <span
+                className="w-2.5 h-2.5 shrink-0"
+                style={{ background: b.color, boxShadow: `0 0 4px ${b.color}` }}
+              />
+              <span className="text-[9px] flex-1" style={{ color: b.id === "baixo" ? G.dim : G.bright }}>
+                {b.label}
+              </span>
+              <span className="text-[8px] tabular-nums" style={{ color: G.dim }}>
+                {b.from.toFixed(2)}–{b.to.toFixed(2)}
+              </span>
+            </div>
+          ))}
+
+          <div className="pt-1.5 mt-0.5 border-t flex items-center justify-between" style={{ borderColor: G.faint }}>
+            <span className="text-[8px]" style={{ color: G.dim }}>
+              {scale.stats.count.toLocaleString("pt-BR")} PONTOS
+            </span>
+            <span className="text-[8px]" style={{ color: G.dim }}>
+              p50 {scale.stats.p50.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── COMPONENT: Map view ──────────────────────────────────────────────────────
 import { RealMap } from "./components/RealMap";
 
@@ -905,6 +980,19 @@ function MapView({
   activeTimes: Set<string>;
   blockedSafePoints: Set<string>; customSafePoints: any[]; customRiskAreas: any[];
 }) {
+  // Faixas de risco da fatia carregada, publicadas pelo CrimeMap.
+  const [scale, setScale] = useState<any>(null);
+  const [slice, setSlice] = useState<{ crimeType: string; period: string }>({ crimeType: "all", period: "all" });
+
+  useEffect(() => {
+    const onLoaded = (e: any) => {
+      setScale(e.detail?.scale ?? null);
+      setSlice({ crimeType: e.detail?.crimeType ?? "all", period: e.detail?.period ?? "all" });
+    };
+    document.addEventListener("heatmap:loaded", onLoaded as EventListener);
+    return () => document.removeEventListener("heatmap:loaded", onLoaded as EventListener);
+  }, []);
+
   return (
     <div className="flex-1 relative overflow-hidden">
       {/* real map */}
@@ -921,6 +1009,11 @@ function MapView({
 
       {/* HUD corners */}
       <HudCorners size={18} />
+
+      {/* legenda de risco, só quando o heatmap está ligado */}
+      {activeLayers.has("heat") && (
+        <RiskLegend scale={scale} crimeType={slice.crimeType} period={slice.period} />
+      )}
 
       {/* quick toggles (bottom center) */}
       <QuickBar

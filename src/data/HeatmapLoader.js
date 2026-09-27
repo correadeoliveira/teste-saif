@@ -129,6 +129,33 @@ export class HeatmapLoader {
         this._summaryPromise = null;
         this._runPromise = null;
     }
+
+    /**
+     * Aquece o cache com as fatias mais prováveis de serem escolhidas, para
+     * que trocar o filtro no STATS não dispare um fetch na frente do usuário.
+     * Todas as 16 fatias somam ~2,7 MB, então é barato; ainda assim roda em
+     * tempo ocioso e em sequência, para não competir com o primeiro render.
+     */
+    prefetch(onDone) {
+        const types = ['furto', 'roubo', 'outros'];
+        const queue = [
+            ...types.map((t) => [t, 'all']),
+            ...types.map((t) => [t, 'noite']),
+        ];
+        let i = 0;
+        const idle = window.requestIdleCallback
+            ? window.requestIdleCallback.bind(window)
+            : (fn) => window.setTimeout(fn, 200);
+
+        const step = () => {
+            if (i >= queue.length) { onDone?.(); return; }
+            const [t, p] = queue[i++];
+            this.loadPoints(t, p)
+                .catch(() => null)          // fatia ausente não é erro fatal
+                .then(() => idle(step));
+        };
+        idle(step);
+    }
 }
 
 export const heatmapLoader = new HeatmapLoader();
