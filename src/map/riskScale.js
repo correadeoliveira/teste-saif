@@ -125,6 +125,68 @@ export function computeRiskScale(points, intensityMax = 1) {
   };
 }
 
+/**
+ * Gradiente vira textura.
+ *
+ * O heatmap em WebGL não interpola uma lista de stops: o fragment shader faz
+ * `texture2D(gradientTexture, vec2(intensity, 0.0))`, ou seja, a COR VEM DA
+ * TEXTURA. Então os cortes por quantil precisam virar pixels, não chaves de
+ * objeto. Uma faixa de 1px funciona porque o shader amostra em y = 0.0 e o
+ * filtro nearest + clampToEdge resolve para a linha 0.
+ *
+ * @param {Record<string,string>} gradient  stops {posição: rgba}
+ * @returns {HTMLCanvasElement}
+ */
+export function gradientToTexture(gradient) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 1;
+  const ctx = canvas.getContext("2d");
+
+  const stops = Object.keys(gradient)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  const g = ctx.createLinearGradient(0, 0, 256, 0);
+  for (const pos of stops) {
+    g.addColorStop(Math.min(1, Math.max(0, pos)), gradient[pos.toFixed(4)]);
+  }
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 256, 1);
+  return canvas;
+}
+
+/**
+ * Troca a textura de gradiente numa camada WebGL já criada.
+ *
+ * O plugin `leaflet-webgl-heatmap` só aceita `gradientTexture` no construtor
+ * e não expõe um setter, mas a textura é um objeto acessível na instância e
+ * a lib base expõe a sequência bind → setSize → nearest → clampToEdge →
+ * upload. Como isso é detalhe interno de uma lib de 2016, tudo é guardado:
+ * se a API mudar, o heatmap continua com o gradiente anterior em vez de
+ * quebrar.
+ *
+ * @param {object} layer   instância L.WebGLHeatMap
+ * @param {HTMLCanvasElement} canvas
+ * @returns {boolean} true se a troca foi aplicada
+ */
+export function applyGradientTexture(layer, canvas) {
+  const heat = layer?.gl;
+  const tex = heat?.gradientTexture;
+  if (!tex || typeof tex.upload !== "function") return false;
+  try {
+    tex.bind(0)
+      .setSize(canvas.width, canvas.height)
+      .nearest()
+      .clampToEdge()
+      .upload(canvas);
+    if (typeof heat.update === "function") heat.update();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Escala neutra, usada antes do primeiro carregamento terminar. */
 export function fallbackScale() {
   const gradient = {};

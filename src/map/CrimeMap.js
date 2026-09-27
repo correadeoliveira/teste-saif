@@ -7,7 +7,7 @@ import { FlowLayer } from './FlowLayer.js';
 import { LightingLayer } from './LightingLayer.js';
 import { ContactsLayer } from './ContactsLayer.js';
 import { createLocalBasemap } from './LocalBasemap.js';
-import { computeRiskScale, fallbackScale } from './riskScale.js';
+import { computeRiskScale, fallbackScale, gradientToTexture, applyGradientTexture } from './riskScale.js';
 
 export class CrimeMap {
     constructor() {
@@ -41,34 +41,41 @@ export class CrimeMap {
         // Initialize with labels layer
         this.baseLayerLabels.addTo(this.map);
 
-        this.heatLayer = L.heatLayer(crimeHeatData, {
-            radius: 12,
-            blur: 10,
-            // maxZoom é reescrito a cada zoom (ver _applyZoomUniform) para
-            // zerar o fator f = 1/2^(maxZoom - zoom) do leaflet.heat. Deixar
-            // 17 fazia a intensidade variar 4x entre zoom 12 e 14.
-            maxZoom: this.map.getZoom(),
-            max: 1.0,
-            gradient: fallbackScale().gradient,
+        // Heatmap em WebGL (leaflet-webgl-heatmap) no lugar do leaflet.heat.
+        //
+        // O canvas 2D custava três coisas que 这里 viram nativas ou somem:
+        //  - `size` em METROS: o kernel tem tamanho geográfico, então o heat
+        //    não muda mais entre zooms sem nenhum ajuste manual.
+        //  - `alphaRange`: resolve a opacidade total. O shader aplica
+        //    smoothstep(0, alphaRange, intensidade), então valores baixos
+        //    deixam a faixa de baixo risco quase transparente e o basemap
+        //    aparece por baixo.
+        //  - WebGL: nada de redesenhar um canvas 2D inteiro a cada arrasto.
+        this.heatLayer = L.webGLHeatmap({
+            // Diâmetro do splat, em metros. Maior que a célula da grade do KDE
+            // (~240 m) de propósito: com splats menores que a célula, cada
+            // amostra aparece como um disco isolado e o campo fica granulado.
+            // Maiores se sobrepõem num campo contínuo, e é a curva de alfa que
+            // mantém as bordas leves em vez de cobrir o mapa inteiro.
+            size: 340,
+            units: 'm',
+            opacity: 0.9,
+            alphaRange: 0.22,
+            gradientTexture: gradientToTexture(fallbackScale().gradient),
+            padding: 0.02,
         }).addTo(this.map);
         this._currentDatasetKey = 'mock:all';
         this._riskScale = null;
-        this._kernelMeters = 110;
         this._loadSeq = 0;
         this._prefetchStarted = false;
-        // Teto de intensidade. Zerar o fator f do leaflet.heat tira a
-        // dependência de zoom, mas deixa pontos sobrepostos somarem acima de
-        // 1.0 e saturarem tudo em vermelho. `max` é o clamp contra o qual a
-        // soma do bucket é comparada, então é ele que controla a saturação.
-        // Constante, logo não reintroduz dependência de zoom. Calibrado pela
-        // distribuição de pixels do canvas.
-        this._intensityMax = 1.7;
+        // Ganho de intensidade, medido contra a distribuição de pixels na tela.
+        // Abaixo de ~0.4 o vermelho some; muito acima, a cidade inteira satura.
+        this._intensityGain = 0.16;
+        this._intensityMax = 1;
         // O loader já tem fallback interno para o mock, então o mapa é
         // capaz de servir dado real desde já. Sem isto, o efeito de filtros
         // roda antes da 1ª carga resolver e cai no ramo do mock.
         this._realDataLoaded = true;
-
-        this.map.on('zoomend', this._applyZoomUniform, this);
 
         this.markerManager = new MarkerManager(this.map);
         this.markerManager.addAllMarkers();
@@ -88,49 +95,6 @@ export class CrimeMap {
     getMap() { return this.map; }
 
     /**
-     * Deixa o heatmap uniforme em todo o mapa e estável entre zooms.
-     *
-     * O leaflet.heat tem DUAS dependências de zoom que quebram a leitura:
-     *
-     *  1. `radius` é em pixels, então a área geográfica coberta por cada
-     *     ponto muda com o zoom (dá zoom in, a mancha encolhe).
-     *  2. `_redraw` multiplica o peso por f = 1/2^(maxZoom - zoom), então a
-     *     INTENSIDADE muda com o zoom — era a maior das duas, e é o que
-     *     fazia o mesmo lugar parecer couro e vermelho em níveis distintos.
-     *
-     * A correção é fixar as duas em espaço geográfico. O raio do kernel vem
-     * da própria grade do KDE (célula de ~240 x 217 m), não de um chute, e o
-     * `maxZoom` é reescrito para o zoom corrente, o que faz f = 1/2^0 = 1.
-     */
-    _applyZoomUniform() {
-        const layer = this.heatLayer;
-        if (!layer || !this.map) return;
-        // A camada só ganha `_map` quando entra no Leaflet. Como o heatmap
-        // inicia desligado, chamar redraw() fora do mapa estoura em
-        // `_map._animating` e derrubava o load inteiro para o ramo do mock.
-        const onMap = this.map.hasLayer(layer);
-
-        const zoom = this.map.getZoom();
-        const lat = this.map.getCenter().lat;
-        const metersPerPixel =
-            156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
-
-        // 110 m: menor que a célula de ~240 m da grade do KDE. Kernel maior que a
-        // célula faz os pontos se tocarem e o canvas cobrir o mapa inteiro,
-        // escondendo o basemap justamente nas zonas de baixo risco.
-        const radius = this._kernelMeters / metersPerPixel;
-        const clamped = Math.max(2.5, Math.min(56, radius));
-
-        layer.options.maxZoom = zoom;   // zera f
-        layer.options.radius = clamped;
-        layer.options.blur = clamped * 0.8;
-        if (onMap) {
-            if (layer._heat) layer._updateOptions();
-            layer.redraw();
-        }
-    }
-
-    /**
      * Carrega o heatmap real gerado pelo pipeline Python e atualiza o layer.
      * Faz fallback silencioso no mock se o JSON não estiver disponível
      * (ex: rodando sem ter executado `python scripts/run_pipeline.py`).
@@ -143,7 +107,7 @@ export class CrimeMap {
         const periodKey = HeatmapLoader.periodsAvailableFor(period) ? period : 'all';
         const datasetKey = `real:${typeKey}:${periodKey}`;
         if (datasetKey === this._currentDatasetKey) {
-            return { count: this.heatLayer._latlngs?.length ?? 0, source: 'real' };
+            return { count: this.heatLayer.data?.length ?? 0, source: 'real' };
         }
         // Token de sequência: no mount, init() dispara loadRealHeatmap('all')
         // e o efeito de filtros dispara outra carga ao mesmo tempo. Sem isso,
@@ -155,30 +119,27 @@ export class CrimeMap {
             const { points, count } = await this._heatmapLoader.loadPoints(typeKey, periodKey);
             if (seq !== this._loadSeq) return { count, source: 'stale' };
 
-            // `setLatLngs` chama `redraw()`, que exige a camada no mapa. Fora
-            // dela (heatmap desligado) escrevemos `_latlngs` direto: os dados
-            // ficam prontos e o desenho acontece quando o usuário ligar.
-            if (this.map.hasLayer(this.heatLayer)) this.heatLayer.setLatLngs(points);
-            else this.heatLayer._latlngs = points;
+            // No WebGL o dado entra por `setData`, que não exige a camada no
+            // mapa: dá para carregar com o heatmap desligado e só desenhar
+            // quando o usuário ligar. (No canvas 2D isso estourava.)
+            this.heatLayer.setData(points);
 
-            // Recalcula a escala por fatia: a distribuição de pesos muda
-            // entre "tudo", só furto, só noite etc., e os cortes por quantil
-            // acompanham essa mudança em vez de usar faixas fixas.
+            // Ganho de intensidade. Este é o ÚNICO ajuste de escala no
+            // pipeline do plugin: `draw()` faz clear → addPoint → update →
+            // multiply → display, e o blit final normaliza por smoothstep(0,1).
+            // `clamp()` existe na lib base mas o plugin nunca chama, então
+            // chamá-lo à mão não mudava nada (a passada de GPU é idempotente).
+            if (this._intensityGain !== 1) this.heatLayer.multiply(this._intensityGain);
+
+            // Recalcula a escala por fatia: a distribuição de pesos muda entre
+            // "tudo", só furto, só noite etc., e os cortes por quantil
+            // acompanham essa mudança em vez de usar faixas fixas. A cor vem
+            // de uma TEXTURA no shader, então os stops viram pixels.
             const scale = computeRiskScale(points, this._intensityMax);
             if (scale) {
                 this._riskScale = scale;
-                // `setOptions` também dispara `redraw()`; ver comentário acima.
-                if (this.map.hasLayer(this.heatLayer)) {
-                    this.heatLayer.setOptions({
-                        gradient: scale.gradient,
-                        max: this._intensityMax,
-                    });
-                } else {
-                    this.heatLayer.options.gradient = scale.gradient;
-                    this.heatLayer.options.max = this._intensityMax;
-                }
+                applyGradientTexture(this.heatLayer, gradientToTexture(scale.gradient));
             }
-            this._applyZoomUniform();
 
             this._realDataLoaded = true;
             this._currentDatasetKey = datasetKey;
@@ -199,7 +160,7 @@ export class CrimeMap {
             return { count, source: 'real', scale };
         } catch (err) {
             console.warn('[CrimeMap] Heatmap real indisponível, usando mock.', err);
-            this.heatLayer.setLatLngs(crimeHeatData);
+            this.heatLayer.setData(crimeHeatData);
             this._currentDatasetKey = 'mock:all';
             this._riskScale = null;
             document.dispatchEvent(new CustomEvent('heatmap:loaded', {
@@ -244,7 +205,7 @@ export class CrimeMap {
             ? filtered.map(c => [c.lat, c.lng, c.intensity])
             : crimeHeatData;
 
-        this.heatLayer.setLatLngs(heatData);
+        this.heatLayer.setData(heatData);
     }
 
     showHeatmap(visible) {
@@ -252,7 +213,6 @@ export class CrimeMap {
             if (!this.map.hasLayer(this.heatLayer)) this.map.addLayer(this.heatLayer);
             if (!this.map.hasLayer(this.baseLayerNoLabels)) this.map.addLayer(this.baseLayerNoLabels);
             if (this.map.hasLayer(this.baseLayerLabels)) this.map.removeLayer(this.baseLayerLabels);
-            this._applyZoomUniform();
         } else {
             if (this.map.hasLayer(this.heatLayer)) this.map.removeLayer(this.heatLayer);
             if (!this.map.hasLayer(this.baseLayerLabels)) this.map.addLayer(this.baseLayerLabels);
