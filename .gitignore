@@ -27,6 +27,13 @@ data/processed/*.cache
 data/features/*.parquet
 data/raw/manifest.json
 
+data/behavior/raw/**
+!data/behavior/raw/.gitkeep
+data/behavior/incoming/**
+!data/behavior/incoming/.gitkeep
+data/behavior/processed/**
+!data/behavior/processed/.gitkeep
+
 # Runs do pipeline (artefato estável fica em shared/heatmaps + current_run.json)
 shared/runs/**
 !shared/runs/.gitkeep
@@ -38,6 +45,7 @@ web-build/
 *.tsbuildinfo
 mobile/dist/
 mobile/.expo/
+mobile/dist-parity/
 
 # ─── Supabase CLI (estado local) ───────────────────────────
 supabase/.branches/
@@ -66,3 +74,7 @@ nohup.out
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !shared/heatmaps/.gitkeep
+!data/behavior/raw/.gitkeep
+!data/behavior/incoming/.gitkeep
+!data/behavior/processed/.gitkeep
+!shared/behavior/.gitkeep

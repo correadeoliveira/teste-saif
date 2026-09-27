@@ -1,19 +1,14 @@
 import React from "react";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaView, StyleSheet } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { MapScreen } from "./src/screens/MapScreen";
-import { colors } from "./src/theme/colors";
+import { RootNavigator } from "./src/navigation/RootNavigator";
 
 export default function App() {
     return (
-        <SafeAreaView style={styles.root}>
+        <SafeAreaProvider>
             <StatusBar style="light" />
-            <MapScreen />
-        </SafeAreaView>
+            <RootNavigator />
+        </SafeAreaProvider>
     );
 }
-
-const styles = StyleSheet.create({
-    root: { flex: 1, backgroundColor: colors.bg },
-});

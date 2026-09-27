@@ -22,13 +22,16 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: mobile/package.json
+          cache-dependency-path: mobile/package-lock.json
 
       - name: Install
         run: npm install --no-audit --no-fund
 
       - name: TypeScript
         run: npm run typecheck
+
+      - name: Inference parity (Python fixture)
+        run: npm run test:parity
 
       # Adicione `expo doctor` quando o app estiver mais maduro:
       # - run: npx expo-doctor

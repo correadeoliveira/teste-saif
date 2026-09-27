@@ -11,13 +11,16 @@
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.saifen.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Saifen usa sua localização para mostrar o heatmap de risco da sua região e alertá-lo sobre zonas críticas próximas.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Saifen pode monitorar em background para alertá-lo ao entrar em uma zona crítica."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Saifen pode monitorar em background para alertá-lo ao entrar em uma zona crítica.",
+        "NSMotionUsageDescription": "Saifen usa acelerômetro e giroscópio para aprender e verificar seu padrão de movimento no aparelho."
       }
     },
     "android": {
@@ -26,7 +29,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,10 +43,13 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Permitir Saifen acessar sua localização para alertas de risco em tempo real."
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "extra": {
-      "eas": { "projectId": "TBD" }
+      "eas": {
+        "projectId": "TBD"
+      }
     }
   }
 }

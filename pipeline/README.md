@@ -101,20 +101,18 @@ pytest
 
 ```
 pipeline/
-├── pyproject.toml                       # pacote instalável
+├── pyproject.toml                       # pacote instalável (KDE / crimes)
 ├── requirements.txt                     # alternativa sem pip install -e
-├── saifen_pipeline/
-│   ├── config.py                        # paths (ROOT, DATA, OUTPUT) + constantes
-│   ├── loader.py                        # leitura de .xlsx SSP-SP
-│   ├── cleaner.py                       # limpeza + dedup + summary
-│   ├── kde.py                           # gaussian_kde 2D (point + grid)
-│   ├── exporter.py                      # JSON/GeoJSON/Parquet
-│   └── integrations/
-│       └── supabase.py                  # cliente compartilhado
-├── scripts/                             # CLIs idempotentes
-├── notebooks/                           # exploração / prototipação
-└── tests/                               # pytest
+├── saifen_pipeline/                     # heatmap SSP-SP
+├── behavior/                            # IMU → LR → model.json (irmão, sklearn)
+├── scripts/
+├── notebooks/
+└── tests/
 ```
+
+Reconhecimento comportamental (acelerômetro/giroscópio) **não** entra neste
+pacote. Ver [behavior/README.md](behavior/README.md). `npm run train` na raiz
+continua sendo só o KDE.
 
 ## Adicionando uma nova fonte de dados
 

@@ -9,17 +9,36 @@
 ```
 shared/
 ├── summary.json                 # estatísticas gerais
-└── heatmaps/
-    ├── heatmap_points.json      # Leaflet.heat — tudo
-    ├── heatmap_points__furto.json
-    ├── heatmap_points__roubo.json
-    ├── heatmap_points__outros.json
-    ├── heatmap_points__{tipo}__{periodo}.json
-    ├── heatmap_grid.geojson     # Mapbox GL JS / PostGIS
-    └── crimes.geojson           # pontos individuais (debug / Supabase)
 ├── current_run.json             # run publicado (fingerprint, modelo, disclaimer)
-└── runs/<run_id>/               # histórico local (gitignored)
+├── heatmaps/                    # Leaflet.heat + GeoJSON (KDE)
+├── runs/<run_id>/               # histórico local (gitignored)
+└── behavior/
+    ├── model.json               # Logistic Regression (IMU) → app
+    ├── metrics.json
+    └── parity_fixture.json      # teste Python vs TypeScript
 ```
+
+### `behavior/model.json`
+
+Contrato do baseline de reconhecimento comportamental (não é heatmap):
+
+```json
+{
+  "version": "1.0.0",
+  "type": "logistic_regression",
+  "feature_names": ["ax_mean", "...", "sma_accel"],
+  "scaler": { "mean": [], "scale": [] },
+  "coef": [],
+  "intercept": 0,
+  "threshold": 0.5,
+  "window_ms": 2000,
+  "overlap": 0.5,
+  "sample_rate_hz": 50,
+  "label_positive": "genuine"
+}
+```
+
+Gerado por `make -C pipeline/behavior export-model`. O heatmap KDE **não** escreve nesta pasta.
 
 ## Contratos (não quebre sem bump de versão)
 

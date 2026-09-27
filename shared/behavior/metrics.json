@@ -1,0 +1,41 @@
+{
+  "train": {
+    "fold": "train",
+    "n_windows": 64,
+    "n_sessions": 8,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "auc": 1.0,
+    "far": 0.0,
+    "frr": 0.0,
+    "session_accuracy": 1.0
+  },
+  "validation": {
+    "fold": "validation",
+    "n_windows": 32,
+    "n_sessions": 4,
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "auc": 1.0,
+    "far": 0.0,
+    "frr": 0.0,
+    "session_accuracy": 1.0
+  },
+  "test": {
+    "fold": "test",
+    "n_windows": 32,
+    "n_sessions": 4,
+    "accuracy": 0.9375,
+    "precision": 1.0,
+    "recall": 0.875,
+    "f1": 0.9333333333333333,
+    "auc": 1.0,
+    "far": 0.0,
+    "frr": 0.125,
+    "session_accuracy": 1.0
+  }
+}
