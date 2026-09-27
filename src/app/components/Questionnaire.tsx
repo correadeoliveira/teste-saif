@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Shield, AlertTriangle, Check, X } from "lucide-react";
+import { Shield, AlertTriangle, Check, X, ChevronDown } from "lucide-react";
 
 const G = {
   bright:  "#ffcb00",
@@ -20,78 +20,252 @@ const G = {
 const crtGlow = (color = G.bright, strength = 8) =>
   `0 0 ${strength}px ${color}, 0 0 ${strength * 2}px ${color}40`;
 
-// Types for our questions
+const STORAGE_KEY = "saifen.behavior_profile.v1";
+
+type Mode = "single" | "multi";
+
 type Question = {
   id: string;
-  title: string;
+  label: string;
   options: string[];
+  mode: Mode;
 };
 
-const QUESTIONS_1_TO_4: Question[] = [
-  { id: "1", title: "1. Qual é o seu padrão diário de locomoção e uso do celular em trânsito?", options: ["Uso intensivo em transporte público", "Uso em carro (no suporte / Bluetooth)", "Caminhando bastante pela rua", "Fico a maior parte do dia parado (escritório/casa)"] },
-  { id: "2", title: "2. Em quais horários do dia você costuma ter os picos de uso mais ativos do seu aparelho?", options: ["Início da manhã e noite", "Durante todo o horário comercial", "Madrugada/Uso noturno", "Sem padrão fixo"] },
-  { id: "3", title: "3. Quais são os seus locais de rotina semanal onde o celular deve manter o menor nível de restrição?", options: ["Casa", "Trabalho", "Casa de familiares", "Academia", "Outros locais de rotina"] },
-  { id: "4", title: "4. Quem são as pessoas que eventualmente têm acesso ao seu celular desbloqueado?", options: ["Apenas eu", "Filhos/Crianças", "Cônjuge/Parceiro(a)", "Amigos/Colegas de trabalho"] },
+type Section = {
+  id: string;
+  title: string;
+  hint: string;
+  questions: Question[];
+  // só aparece se a resposta da pergunta `dependsOn` não for "não"
+  dependsOn?: string;
+  skipWhen?: string;
+};
+
+// Uma tela, quatro seções. As 4 sub-perguntas de compartilhamento só
+// aparecem quando o usuário admite que cede o aparelho a terceiros —
+// antes elas quebravam o fluxo no meio, empurrando 4 telas extras.
+const SECTIONS: Section[] = [
+  {
+    id: "rotina",
+    title: "Rotina",
+    hint: "Onde e quando você usa o aparelho.",
+    questions: [
+      {
+        id: "mobilidade",
+        label: "Como você usa o celular na maior parte do dia?",
+        mode: "single",
+        options: [
+          "Transporte público",
+          "Carro (suporte / Bluetooth)",
+          "Caminhando pela rua",
+          "Parado (escritório / casa)",
+        ],
+      },
+      {
+        id: "picos",
+        label: "Quando é o pico de uso?",
+        mode: "single",
+        options: ["Manhã e noite", "Horário comercial", "Madrugada", "Sem padrão fixo"],
+      },
+      {
+        id: "locais",
+        label: "Locais onde o celular deve ter menos restrição",
+        mode: "multi",
+        options: ["Casa", "Trabalho", "Casa de familiares", "Academia", "Outros"],
+      },
+      {
+        id: "aglomeracao",
+        label: "Com que frequência você vai a locais muito movimentados ou de alto risco de furto?",
+        mode: "single",
+        options: ["Diariamente", "Fins de semana", "Raramente", "Nunca"],
+      },
+    ],
+  },
+  {
+    id: "compartilhamento",
+    title: "Compartilhamento",
+    hint: "Quem mais encosta no seu aparelho.",
+    questions: [
+      {
+        id: "terceiros",
+        label: "Quem tem acesso ao seu celular desbloqueado?",
+        mode: "multi",
+        options: ["Filhos / crianças", "Cônjuge / parceiro(a)", "Amigos / colegas", "Ninguém além de mim"],
+      },
+    ],
+  },
+  {
+    id: "compartilhamento-detalhe",
+    title: "Compartilhamento · detalhe",
+    hint: "Só aparece se o celular sai da sua mão.",
+    dependsOn: "terceiros",
+    skipWhen: "Ninguém além de mim",
+    questions: [
+      {
+        id: "uso_terceiros",
+        label: "Para que costumam usar quando está com terceiros?",
+        mode: "multi",
+        options: ["Vídeos / jogos", "Chamadas / fotos", "Navegação sob minha supervisão"],
+      },
+      {
+        id: "frequencia_emprestimo",
+        label: "Com que frequência empresta ou deixa o aparelho com outra pessoa?",
+        mode: "single",
+        options: ["Diariamente", "1 a 2 vezes por semana", "Raras vezes no mês", "Nunca"],
+      },
+      {
+        id: "modo_visitante",
+        label: "Prefere ativar um 'Modo Visitante' manualmente?",
+        mode: "single",
+        options: ["Sim, botão rápido", "Não, detectar automaticamente"],
+      },
+      {
+        id: "acao_imediata",
+        label: "O que fazer quando o sistema detectar outra pessoa usando?",
+        mode: "single",
+        options: [
+          "Bloquear a tela",
+          "Bloquear só apps sensíveis (banco, mensagens, fotos)",
+          "Pedir PIN / biometria na próxima ação",
+        ],
+      },
+    ],
+  },
+  {
+    id: "protecao",
+    title: "Proteção",
+    hint: "O que travar e como destravar.",
+    questions: [
+      {
+        id: "apps_criticos",
+        label: "Bloquear primeiro ao menor sinal de anomalia",
+        mode: "multi",
+        options: [
+          "Bancos e carteiras digitais",
+          "WhatsApp / e-mail / redes",
+          "Galeria de fotos",
+          "Configurações do sistema",
+        ],
+      },
+      {
+        id: "reauth",
+        label: "Em desvio leve, como reautenticar?",
+        mode: "single",
+        options: ["Biometria discreta", "PIN de 4 dígitos", "Bloqueio total sem aviso"],
+      },
+      {
+        id: "tempo_limite",
+        label: "Quanto tempo parado antes de exigir validação reforçada?",
+        mode: "single",
+        options: ["Imediato", "1 a 5 minutos", "Mais de 15 minutos"],
+      },
+      {
+        id: "ancoras",
+        label: "O que conta como 'âncora de confiança' para não bloquear?",
+        mode: "multi",
+        options: ["Smartwatch no pulso", "Fone Bluetooth conectado", "Som do carro", "Nada"],
+      },
+    ],
+  },
+  {
+    id: "contexto",
+    title: "Contexto",
+    hint: "Fora da sua rotina.",
+    questions: [
+      {
+        id: "fora_rotina",
+        label: "Fora das suas zonas de rotina, o sistema deve:",
+        mode: "single",
+        options: ["Aumentar a rigidez", "Manter o padrão", "Avisar antes de bloquear"],
+      },
+      {
+        id: "gps",
+        label: "Com o GPS ativo no suporte, deve suspender o bloqueio?",
+        mode: "single",
+        options: ["Sim, manter desbloqueado", "Não, continuar monitorando"],
+      },
+    ],
+  },
 ];
 
-const SUB_QUESTIONS: Question[] = [
-  { id: "4.1", title: "4.1. Em qual situação de uso compartilhado o celular costuma estar quando na mão de terceiros?", options: ["Para assistir vídeos / jogar games", "Para fazer chamadas ou tirar fotos", "Navegação livre sob minha supervisão"] },
-  { id: "4.2", title: "4.2. Qual é a frequência com que você empresta ou deixa seu celular com outra pessoa ao longo da semana?", options: ["Diariamente", "1 a 2 vezes por semana", "Raras vezes no mês", "Nunca"] },
-  { id: "4.3", title: "4.3. Quando você empresta o celular, prefere ativar manualmente um 'Modo Visitante / Convidado'?", options: ["Sim, gostaria de um botão rápido", "Não, prefiro que o sistema identifique a mudança automaticamente"] },
-  { id: "4.4", title: "4.4. Qual deve ser a AÇÃO IMEDIATA do sistema ao detectar que outra pessoa tomou o celular da sua mão ou está usando?", options: ["Bloquear a tela imediatamente", "Bloquear apenas aplicativos sensíveis (bancos, mensagens, fotos)", "Pedir confirmação silenciosa (PIN/Digital) na próxima ação"] },
-];
+// ── persistence ─────────────────────────────────────────────────────────────
 
-const QUESTIONS_5_TO_11: Question[] = [
-  { id: "5", title: "5. Com que frequência você frequenta locais de grande aglomeração ou com alto risco percebido de furto/assalto?", options: ["Diariamente", "Frequentemente nos fins de semana", "Raras vezes", "Nunca"] },
-  { id: "6", title: "6. Como o sistema deve se comportar quando você estiver fora das suas zonas de rotina?", options: ["Aumentar a rigidez da segurança", "Manter a mesma segurança padrão", "Avisar antes de aplicar bloqueios"] },
-  { id: "7", title: "7. Quais aplicativos ou dados você considera CRÍTICOS e que devem ser bloqueados instantaneamente ao menor sinal de anomalia?", options: ["Apps de bancos e carteiras digitais", "WhatsApp / E-mails / Redes Sociais", "Galeria de fotos", "Configurações do sistema", "Todos os itens anteriores"] },
-  { id: "8", title: "8. Em caso de desvio comportamental leve, como prefere ser reautenticado?", options: ["Notificação discreta pedindo biometria (Digital/Facial)", "Pedido de PIN de 4 dígitos", "Bloqueio total sem aviso"] },
-  { id: "9", title: "9. Qual o tempo limite tolerável sem uso antes de exigir validação comportamental reforçada ao pegar o aparelho?", options: ["Imediato (ao levantar o aparelho)", "Após 1 a 5 minutos", "Apenas após longos períodos (mais de 15 minutos)"] },
-  { id: "10", title: "10. Quais dispositivos do seu dia a dia podem atuar como 'Âncoras de Confiança' para impedir o bloqueio automático?", options: ["Smartwatch no pulso", "Fones de ouvido Bluetooth conectados", "Som do carro", "Nenhum"] },
-  { id: "11", title: "11. Se você estiver usando o celular para navegação GPS no carro ou moto, o sistema deve suspender o bloqueio comportamental contínuo?", options: ["Sim, manter desbloqueado enquanto o GPS estiver ativo no suporte", "Não, continuar monitorando a distância/vibração"] },
-];
+function loadSaved(): Record<string, string[]> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
 export default function Questionnaire({ onComplete }: { onComplete: () => void }) {
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string[]>>(loadSaved);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isSkipping, setIsSkipping] = useState(false);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  // Determine the sequence of questions based on answers
-  const showSubQuestions = answers["4"] && answers["4"] !== "Apenas eu";
-  const currentQuestions = showSubQuestions 
-    ? [...QUESTIONS_1_TO_4, ...SUB_QUESTIONS, ...QUESTIONS_5_TO_11]
-    : [...QUESTIONS_1_TO_4, ...QUESTIONS_5_TO_11];
-  
-  const currentQ = currentQuestions[step];
-  const isLastStep = step === currentQuestions.length - 1;
-  const currentAnswer = answers[currentQ?.id];
+  // Persiste a cada mudança para nada se perder num refresh.
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(answers)); } catch { /* quota */ }
+  }, [answers]);
 
-  const handleNext = () => {
-    if (isLastStep) {
-      onComplete();
-    } else {
-      setStep(s => s + 1);
+  // Uma seção condicional só entra depois de a pergunta-pai ser respondida
+  // E de a resposta não ser a que dispensa o detalhe. Três casos, na ordem:
+  //   1. sem resposta ainda -> oculta
+  //   2. resposta == skipWhen -> oculta
+  //   3. caso contrário -> visível
+  const visibleSections = useMemo(
+    () =>
+      SECTIONS.filter((s) => {
+        if (!s.dependsOn) return true;
+        const parent = answers[s.dependsOn] ?? [];
+        if (parent.length === 0) return false;
+        if (s.skipWhen && parent.includes(s.skipWhen)) return false;
+        return true;
+      }),
+    [answers]
+  );
+
+  const allQuestions = useMemo(() => visibleSections.flatMap((s) => s.questions), [visibleSections]);
+  const answered = allQuestions.filter((q) => (answers[q.id] ?? []).length > 0).length;
+  const total = allQuestions.length;
+  const complete = total > 0 && answered === total;
+
+  const toggle = (q: Question, opt: string) => {
+    setAnswers((prev) => {
+      const cur = prev[q.id] ?? [];
+      if (q.mode === "single") return { ...prev, [q.id]: [opt] };
+      return { ...prev, [q.id]: cur.includes(opt) ? cur.filter((o) => o !== opt) : [...cur, opt] };
+    });
+    setStatus("idle");
+  };
+
+  const submit = async () => {
+    setStatus("saving");
+    try {
+      const res = await fetch("/api/behavior-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers, version: 1, completed_at: new Date().toISOString() }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      setStatus("saved");
+    } catch {
+      // Sem backend, a resposta continua salva no localStorage.
+      setStatus("error");
     }
-  };
-
-  const handleSkipClick = () => {
-    setIsSkipping(true);
-  };
-
-  const confirmSkip = () => {
     onComplete();
-  };
-
-  const cancelSkip = () => {
-    setIsSkipping(false);
   };
 
   return (
     <AnimatePresence>
       <motion.div
-        className="absolute inset-0 z-50 flex items-center justify-center p-6"
+        className="absolute inset-0 z-50 flex items-center justify-center p-4"
         style={{
-          background: "rgba(0, 9, 0, 0.90)",
+          background: "rgba(10, 8, 0, 0.92)",
           backdropFilter: "blur(10px)",
           fontFamily: "'Share Tech Mono', 'JetBrains Mono', monospace",
         }}
@@ -99,89 +273,176 @@ export default function Questionnaire({ onComplete }: { onComplete: () => void }
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
-        {/* Scanlines overlay for the modal background */}
-        <div 
+        <div
           className="pointer-events-none absolute inset-0 opacity-50"
-          style={{ backgroundImage: "repeating-linear-gradient(0deg,rgba(0,0,0,0.15) 0px,rgba(0,0,0,0.15) 1px,transparent 1px,transparent 3px)" }}
+          style={{ backgroundImage: "repeating-linear-gradient(0deg,rgba(0,0,0,0.15) 0deg,rgba(0,0,0,0.15) 1px,transparent 1px,transparent 3px)" }}
         />
 
         {!isSkipping ? (
           <motion.div
-            key="questionnaire-box"
-            className="w-full max-w-md border flex flex-col relative z-10"
+            key="panel"
+            className="w-full max-w-md border flex flex-col relative z-10 max-h-full"
             style={{
               borderColor: G.bright,
-              background: "#0f0c00",
+              background: G.panel,
               boxShadow: `0 0 20px ${G.glow}`,
             }}
-            initial={{ scale: 0.95, y: 20, opacity: 0 }}
+            initial={{ scale: 0.97, y: 16, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
-            exit={{ scale: 0.95, y: -20, opacity: 0 }}
+            exit={{ scale: 0.97, y: -16, opacity: 0 }}
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: G.border, background: "rgba(255,203,0,0.05)" }}>
-              <div className="flex items-center gap-2">
-                <Shield size={16} style={{ color: G.bright }} />
-                <span className="text-sm tracking-widest font-bold" style={{ color: G.bright, textShadow: crtGlow() }}>
+            <div
+              className="flex items-center justify-between px-4 py-3 border-b shrink-0"
+              style={{ borderColor: G.border, background: "rgba(255,203,0,0.05)" }}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Shield size={15} style={{ color: G.bright, flexShrink: 0 }} />
+                <span
+                  className="text-xs tracking-widest font-bold truncate"
+                  style={{ color: G.bright, textShadow: crtGlow() }}
+                >
                   CALIBRAÇÃO DE SEGURANÇA
                 </span>
               </div>
-              <span className="text-xs" style={{ color: G.dim }}>
-                {step + 1} / {currentQuestions.length}
+              <span className="text-xs shrink-0 ml-2" style={{ color: G.dim }}>
+                {answered}/{total}
               </span>
             </div>
 
-            {/* Content */}
-            <div className="p-6 flex flex-col gap-6">
-              <h2 className="text-xl font-bold uppercase tracking-wide leading-relaxed" style={{ color: G.bright, textShadow: crtGlow(G.bright, 4) }}>
-                {currentQ?.title}
-              </h2>
-
-              <div className="flex flex-col gap-3">
-                {currentQ?.options.map((opt) => {
-                  const isSelected = currentAnswer === opt;
-                  return (
-                    <button
-                      key={opt}
-                      onClick={() => setAnswers({ ...answers, [currentQ.id]: opt })}
-                      className="px-4 py-3 text-left border uppercase tracking-wider transition-all duration-200 flex justify-between items-center"
-                      style={{
-                        background: isSelected ? `${G.bright}20` : "transparent",
-                        borderColor: isSelected ? G.bright : G.dim,
-                        color: isSelected ? G.bright : G.dim,
-                        boxShadow: isSelected ? `0 0 10px ${G.glow}` : "none"
-                      }}
-                    >
-                      <span>{opt}</span>
-                      {isSelected && <Check size={16} />}
-                    </button>
-                  );
-                })}
-              </div>
+            {/* progresso */}
+            <div className="h-0.5 shrink-0" style={{ background: G.faint }}>
+              <div
+                className="h-full transition-all duration-500"
+                style={{
+                  width: `${total ? (answered / total) * 100 : 0}%`,
+                  background: G.bright,
+                  boxShadow: complete ? crtGlow(G.bright, 5) : "none",
+                }}
+              />
             </div>
 
-            {/* Footer */}
-            <div className="p-4 border-t flex items-center justify-between" style={{ borderColor: G.border, background: "rgba(0,0,0,0.3)" }}>
-              <button 
-                onClick={handleSkipClick}
-                className="text-xs uppercase tracking-widest px-3 py-2 transition-colors hover:opacity-70"
+            <div className="overflow-y-auto flex-1" style={{ background: G.bg }}>
+              {visibleSections.map((section) => {
+                const open = !collapsed[section.id];
+                const secAnswered = section.questions.filter(
+                  (q) => (answers[q.id] ?? []).length > 0
+                ).length;
+                const isDetail = Boolean(section.dependsOn);
+
+                return (
+                  <section key={section.id} className="border-b" style={{ borderColor: G.border }}>
+                    <button
+                      onClick={() => setCollapsed((c) => ({ ...c, [section.id]: !c[section.id] }))}
+                      className="w-full px-4 py-3 flex items-center justify-between gap-2 transition-colors hover:bg-white/5"
+                      style={{ background: isDetail ? "rgba(255,203,0,0.03)" : "transparent" }}
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="text-xs tracking-widest font-bold truncate"
+                          style={{ color: secAnswered === section.questions.length ? G.bright : G.mid }}
+                        >
+                          {section.title}
+                        </span>
+                        <span className="text-[10px] truncate" style={{ color: G.dim }}>
+                          {section.hint}
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        <span
+                          className="text-[10px]"
+                          style={{ color: secAnswered === section.questions.length ? G.bright : G.dim }}
+                        >
+                          {secAnswered}/{section.questions.length}
+                        </span>
+                        <ChevronDown
+                          size={13}
+                          style={{
+                            color: G.dim,
+                            transform: open ? "rotate(0deg)" : "rotate(-90deg)",
+                            transition: "transform .2s",
+                          }}
+                        />
+                      </span>
+                    </button>
+
+                    {open && (
+                      <div className="px-4 pb-4 flex flex-col gap-4">
+                        {section.questions.map((q) => {
+                          const cur = answers[q.id] ?? [];
+                          return (
+                            <div key={q.id}>
+                              <div className="flex items-baseline gap-2 mb-2">
+                                <span className="text-xs leading-snug" style={{ color: G.bright }}>
+                                  {q.label}
+                                </span>
+                                <span className="text-[9px] shrink-0" style={{ color: G.dim }}>
+                                  {q.mode === "multi" ? "MULTI" : "1"}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {q.options.map((opt) => {
+                                  const on = cur.includes(opt);
+                                  return (
+                                    <button
+                                      key={opt}
+                                      onClick={() => toggle(q, opt)}
+                                      className="px-2 py-1 text-[10px] uppercase tracking-wider border transition-all duration-150 flex items-center gap-1"
+                                      style={{
+                                        fontFamily: "'JetBrains Mono', monospace",
+                                        background: on ? "rgba(255,203,0,0.14)" : "transparent",
+                                        borderColor: on ? G.bright : G.faint,
+                                        color: on ? G.bright : G.dim,
+                                        boxShadow: on ? `0 0 6px ${G.glow}` : "none",
+                                      }}
+                                    >
+                                      {on && <Check size={9} />}
+                                      {opt}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
+
+            <div
+              className="px-4 py-3 border-t flex items-center justify-between gap-3 shrink-0"
+              style={{ borderColor: G.border, background: "rgba(0,0,0,0.3)" }}
+            >
+              <button
+                onClick={() => setIsSkipping(true)}
+                className="text-xs uppercase tracking-widest px-2 py-2 transition-colors hover:opacity-70 shrink-0"
                 style={{ color: G.dim }}
               >
                 Pular
               </button>
 
-              <button
-                onClick={handleNext}
-                disabled={!currentAnswer}
-                className="px-6 py-2 text-sm uppercase tracking-widest font-bold transition-all duration-300 disabled:opacity-50"
-                style={{
-                  background: currentAnswer ? G.bright : G.dim,
-                  color: currentAnswer ? G.bg : "#011a05",
-                  boxShadow: currentAnswer ? crtGlow(G.bright, 5) : "none"
-                }}
-              >
-                {isLastStep ? "Concluir Questionário" : "Próximo"}
-              </button>
+              <div className="flex items-center gap-2 min-w-0">
+                {status === "saving" && (
+                  <span className="text-[10px] shrink-0" style={{ color: G.dim }}>ENVIANDO…</span>
+                )}
+                {status === "error" && (
+                  <span className="text-[10px] shrink-0" style={{ color: G.warn }}>SALVO LOCAL</span>
+                )}
+                <button
+                  onClick={submit}
+                  disabled={!complete}
+                  className="px-4 py-2 text-xs uppercase tracking-widest font-bold transition-all duration-300 disabled:opacity-40 shrink-0"
+                  style={{
+                    background: complete ? G.bright : G.faint,
+                    color: complete ? G.bg : G.dim,
+                    boxShadow: complete ? crtGlow(G.bright, 5) : "none",
+                  }}
+                >
+                  Concluir
+                </button>
+              </div>
             </div>
           </motion.div>
         ) : (
@@ -197,33 +458,43 @@ export default function Questionnaire({ onComplete }: { onComplete: () => void }
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
           >
-            <div className="p-5 flex flex-col items-center text-center gap-4 border-b" style={{ borderColor: "rgba(255,34,0,0.2)" }}>
-              <div className="w-12 h-12 flex items-center justify-center rounded-full" style={{ background: "rgba(255,34,0,0.15)" }}>
+            <div
+              className="p-5 flex flex-col items-center text-center gap-4 border-b"
+              style={{ borderColor: "rgba(255,34,0,0.2)" }}
+            >
+              <div
+                className="w-12 h-12 flex items-center justify-center rounded-full"
+                style={{ background: "rgba(255,34,0,0.15)" }}
+              >
                 <AlertTriangle size={24} style={{ color: G.danger }} />
               </div>
               <div>
-                <h3 className="text-lg font-bold mb-2 uppercase tracking-wide" style={{ color: G.danger, textShadow: crtGlow(G.danger, 6) }}>
+                <h3
+                  className="text-lg font-bold mb-2 uppercase tracking-wide"
+                  style={{ color: G.danger, textShadow: crtGlow(G.danger, 6) }}
+                >
                   Atenção
                 </h3>
-                <p className="text-sm leading-relaxed" style={{ color: "rgba(255,100,100,0.85)" }}>
-                  Estas perguntas são extremamente importantes para a <strong>sua segurança</strong> e para um monitoramento mais preciso do sistema.
+                <p className="text-sm leading-relaxed" style={{ color: "rgba(255,140,120,0.9)" }}>
+                  Sem estas respostas o sistema não consegue ajustar o nível de rigidez às
+                  zonas onde você mais usa o aparelho.
                 </p>
-                <p className="text-sm mt-3" style={{ color: "rgba(255,100,100,0.7)" }}>
+                <p className="text-sm mt-3" style={{ color: "rgba(255,140,120,0.7)" }}>
                   Tem certeza que deseja pular?
                 </p>
               </div>
             </div>
-            
+
             <div className="flex">
-              <button 
-                onClick={cancelSkip}
+              <button
+                onClick={() => setIsSkipping(false)}
                 className="flex-1 py-3 text-sm font-bold uppercase tracking-widest border-r transition-colors"
                 style={{ borderColor: "rgba(255,34,0,0.2)", color: G.bright, background: "rgba(255,203,0,0.05)" }}
               >
                 Voltar
               </button>
-              <button 
-                onClick={confirmSkip}
+              <button
+                onClick={submit}
                 className="flex-1 py-3 text-sm font-bold uppercase tracking-widest transition-colors"
                 style={{ color: G.danger, background: "rgba(255,34,0,0.1)" }}
               >
