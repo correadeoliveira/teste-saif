@@ -1,7 +1,7 @@
 {
   "meta": {
     "generator": "saifen_pipeline",
-    "generated_at": "2026-09-27T02:35:46+00:00",
+    "generated_at": "2026-09-27T04:08:15+00:00",
     "version": "0.2.0",
     "disclaimer": "Incidência observada de boletins de ocorrência georreferenciados. Não é probabilidade individual nem a estatística oficial RES 160/516."
   },
@@ -16,7 +16,7 @@
     "tarde": 15665,
     "manha": 11754,
     "madrugada": 8223,
-    "None": 165
+    "nan": 165
   },
   "top_neighborhoods": {
     "PINHEIROS": 2167,
