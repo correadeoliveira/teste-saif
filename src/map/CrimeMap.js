@@ -59,8 +59,18 @@ export class CrimeMap {
             // mantém as bordas leves em vez de cobrir o mapa inteiro.
             size: 340,
             units: 'm',
-            opacity: 0.9,
-            alphaRange: 0.22,
+            // `opacity` multiplica o canvas inteiro, então reduz todas as
+            // faixas de uma vez — foi o que apagou a faixa BAIXO quando caiu
+            // sozinho para 0.45. `alphaRange` é o que achata a rampa de alfa
+            // (smoothstep(0, alphaRange, intensidade)) e devolve peso às
+            // bordas sem precisar engrossar as faixas de cima.
+            //
+            // Os dois andam juntos: 0.10/0.70 cobre o mapa inteiro e produz
+            // banding verde do blending aditivo; 0.22/0.45 some com o BAIXO.
+            // 0.20/0.60 mantém as quatro faixas visíveis com o basemap
+            // legível por baixo.
+            opacity: 0.6,
+            alphaRange: 0.2,
             gradientTexture: gradientToTexture(fallbackScale().gradient),
             padding: 0.02,
         }).addTo(this.map);
