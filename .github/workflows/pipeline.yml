@@ -3,6 +3,11 @@ name: pipeline · build heatmaps
 # Reprocessa heatmaps quando uma nova planilha entra em data/raw/
 # ou o pipeline Python é atualizado. Commita os artefatos de volta
 # no repositório (shared/*), prontos para o web e o mobile.
+#
+# Sem execucao agendada. O cron semanal (0 6 * * 1) rodava o pipeline toda
+# segunda e o saifen-bot committava shared/ em cima do horario, mesmo sem
+# dado novo. O rebuild continua pelo push em data/raw/**.xlsx ou pipeline/**,
+# e por execucao manual (workflow_dispatch) na aba Actions.
 
 on:
   push:
@@ -12,8 +17,6 @@ on:
       - "pipeline/**"
       - ".github/workflows/pipeline.yml"
   workflow_dispatch:
-  schedule:
-    - cron: "0 6 * * 1"     # toda segunda 06:00 UTC
 
 jobs:
   test:
