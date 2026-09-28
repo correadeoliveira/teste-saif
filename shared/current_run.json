@@ -1,12 +1,12 @@
 {
-  "run_id": "20260927T235526Z_d857153eff88ab5e",
+  "run_id": "20260928T003346Z_d857153eff88ab5e",
   "fingerprint": "d857153eff88ab5e",
   "model": "kde",
   "model_version": "0.2.0",
   "source_file": "CelularesSubtraidos_2026.xlsx",
   "source_sha256": "982405a27e44b3b51d332c7b96e5c4e5db55c7be63e0d06afe005a252f58a336",
-  "generated_at": "2026-09-27T23:55:26+00:00",
+  "generated_at": "2026-09-28T00:33:46+00:00",
   "disclaimer": "Incidência observada de boletins de ocorrência georreferenciados. Não é probabilidade individual nem a estatística oficial RES 160/516.",
   "heatmaps": "shared/heatmaps",
-  "run_dir": "shared/runs/20260927T235526Z_d857153eff88ab5e"
+  "run_dir": "shared/runs/20260928T003346Z_d857153eff88ab5e"
 }
