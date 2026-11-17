@@ -38,8 +38,8 @@ export class HUDController {
         }
 
         const openMobile = () => {
-            panel.classList.toggle('open-mobile');
-            panel.classList.toggle('collapsed');
+            const opened = panel.classList.toggle('open-mobile');
+            panel.classList.toggle('collapsed', !opened);
         };
 
         if (mobileBtn) mobileBtn.addEventListener('click', openMobile);

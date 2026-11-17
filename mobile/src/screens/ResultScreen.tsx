@@ -26,7 +26,7 @@ export function ResultScreen() {
 
     return (
         <View style={screenStyles.root}>
-            <Text style={screenStyles.title}>VERIFICAÇÃO DEMONSTRATIVA</Text>
+            <Text style={screenStyles.title}>RESULT</Text>
             <Hud
                 title={result.status === "ok" ? (result.accept ? "ACCEPT" : "REJECT") : "INDISPONÍVEL"}
                 lines={result.status === "ok" ? [

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import MapView, { Heatmap, PROVIDER_DEFAULT } from "react-native-maps";
 
@@ -12,6 +12,8 @@ import { subscribeZone } from "../services/zoneEngine";
 import { ZONE_LABEL, type ZoneSnapshot } from "../services/zone";
 
 const SP_CENTER = { latitude: -23.5505, longitude: -46.6333 };
+// The default Apple Maps provider has no native Heatmap view.
+const supportsNativeHeatmap = Platform.OS === "android";
 
 export function MapScreen() {
     const insets = useSafeAreaInsets();
@@ -49,7 +51,7 @@ export function MapScreen() {
                 showsUserLocation
                 customMapStyle={DARK_MAP_STYLE}
             >
-                {heat && heat.points.length > 0 && (
+                {supportsNativeHeatmap && heat && heat.points.length > 0 && (
                     <Heatmap
                         points={heat.points.map(([lat, lng, weight]) => ({
                             latitude: lat,

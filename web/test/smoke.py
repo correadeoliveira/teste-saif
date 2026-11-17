@@ -89,6 +89,28 @@ def smoke(browser, base):
         page.close()
 
 
+def smoke_mobile_drawer(browser, base):
+    page = browser.new_page(viewport={"width": 375, "height": 667}, is_mobile=True, has_touch=True)
+    summaries = []
+    page.route("**/*", lambda route: route_fixture(route, base, True, summaries))
+    page.goto(base)
+    expect(page.locator('[data-heatmap-source="real"]')).to_be_attached(timeout=15_000)
+    for route in summaries:
+        route.fulfill(json={"total_incidents": 10})
+    drawer = page.locator("#side-panel")
+    toggle = page.locator("#mobile-panel-fab")
+    toggle.tap()
+    expect(drawer).to_have_class("side-panel open-mobile")
+    page.wait_for_function("""() =>
+        document.querySelector('#side-panel').getBoundingClientRect().bottom <= innerHeight
+    """)
+    page.locator("#map").tap(position={"x": 180, "y": 120})
+    expect(drawer).to_have_class("side-panel collapsed")
+    toggle.tap()
+    expect(drawer).to_have_class("side-panel open-mobile")
+    page.close()
+
+
 def main():
     apps = (
         (["node", "tools/serve-web.mjs", "8031"], "http://127.0.0.1:8031/web/"),
@@ -101,6 +123,8 @@ def main():
         for command, base in apps:
             with server(command, base):
                 smoke(browser, base)
+                if urlsplit(base).path == "/web/":
+                    smoke_mobile_drawer(browser, base)
                 print(f"Web smoke OK: {base}")
         browser.close()
 

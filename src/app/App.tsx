@@ -1004,7 +1004,7 @@ function MapView({
   }, []);
 
   return (
-    <div className="flex-1 relative overflow-hidden">
+    <div className="flex-1 relative overflow-hidden" data-heatmap-source={slice.source}>
       {/* real map */}
       <RealMap 
         activeTypes={activeTypes} 
@@ -1020,15 +1020,7 @@ function MapView({
       {/* HUD corners */}
       <HudCorners size={18} />
 
-      <div data-heatmap-source={slice.source} role="status"
-           className="absolute top-2 right-2 z-[500] bg-black/80 px-2 py-1 text-xs"
-           style={{ color: G.bright }}>
-        {slice.source === "real"
-          ? `SSP-SP · ${slice.crimeType === "all" ? "todos os tipos" : slice.crimeType} · ${slice.period === "all" ? "todos os períodos" : slice.period}`
-          : slice.source === "mock" ? "Heatmap de demonstração" : "Carregando heatmap…"}
-      </div>
-
-      {/* Legenda de risco, visível com a camada de calor. */}
+      {/* legenda de risco, só quando o heatmap está ligado */}
       {activeLayers.has("heat") && (
         <RiskLegend scale={scale} crimeType={slice.crimeType} period={slice.period} />
       )}

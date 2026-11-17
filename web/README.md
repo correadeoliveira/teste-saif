@@ -62,16 +62,18 @@ web/
 ## Fontes e fallbacks
 
 Os dois clientes validam a fatia pedida e tentam, em ordem, tipo e período,
-tipo completo, heatmap geral e demonstração. O indicador do mapa mostra a
-origem e a fatia que foi efetivamente carregada. `shared/summary.json`
-descreve o total da base SSP-SP. O console registra a origem, duração,
-contagem e ocorrência de fallback do carregamento.
+tipo completo, heatmap geral e demonstração. O HTML/JS mostra a origem na
+barra de contexto. A legenda do React mostra a fatia carregada quando a
+camada de calor tem uma escala calculada. `shared/summary.json` descreve
+o total da base SSP-SP. O console registra a origem, duração, contagem e
+ocorrência de fallback do carregamento.
 
 ## CI
 
 O CI valida o HTML e os imports relativos, testa o loader e os fallbacks,
 compila o Vite e abre os dois clientes em Chromium com as respostas de
-rede simuladas. [Playbook de qualidade](../docs/agents/quality.md).
+rede simuladas. O smoke test também abre, fecha e reabre a gaveta de filtros
+do HTML/JS em uma tela móvel. [Playbook de qualidade](../docs/agents/quality.md).
 
 ## Deploy (futuro)
 
