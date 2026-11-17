@@ -26,6 +26,12 @@ typography:
     fontFamily: "JetBrains Mono, monospace"
     fontSize: "9px"
     letterSpacing: "0.1em"
+  react-readout:
+    fontFamily: "JetBrains Mono, monospace"
+    fontSize: "10px"
+  react-filter:
+    fontFamily: "JetBrains Mono, monospace"
+    fontSize: "11px"
   web-body:
     fontFamily: "Share Tech Mono, Courier New, monospace"
     fontSize: "13px"
@@ -42,6 +48,7 @@ typography:
     letterSpacing: "2px"
 rounded:
   react-tab: "2px"
+  map-popup: "4px"
   web-drawer-top: "12px"
 spacing:
   react-legend-inset: "8px"
@@ -82,13 +89,13 @@ Esta referência parte da interface em `44d58eb`, revisão anterior ao trabalho 
 
 ## Layout
 
-- **React.** A interface ocupa a altura disponível num quadro central de até 430 px. O mapa ocupa o restante do quadro. A legenda fica no canto superior esquerdo quando **HEAT** está ativo e há escala. A barra `HEAT / SAFE / LUZ / BUS` fica a 16% da base e a navegação `MAPA / PONTOS / STATS` a 8%. A navegação fica transparente sobre o mapa e opaca sobre listas, que medem a área ocupada pela barra para preservar o último conteúdo. [Composição React](src/app/App.tsx)
+- **React.** A interface ocupa a altura disponível num quadro central de até 430 px. A barra `VIGIL_OS` traz a região do mapa, o relógio de São Paulo e o acesso aos filtros. O mapa ocupa o restante do quadro. A legenda fica no canto superior esquerdo com **HEAT** ativo. A barra `HEAT / SAFE / LUZ / BUS / FLUXO / ROTAS` fica a 16% da base do mapa e sobe em telas baixas para manter 8 px de folga acima da navegação `MAPA / PONTOS / STATS`, posicionada a `8dvh` da base. A navegação fica transparente sobre o mapa e opaca sobre listas, que medem a área ocupada pela barra para preservar o último conteúdo. [Composição React](src/app/App.tsx)
 - **HTML/JS.** A composição de tela cheia usa HUD superior, barra inferior e painel lateral de 340 px. A 900 px, o painel passa a 300 px. A 768 px, vira gaveta inferior de largura integral, acionada pelo controle móvel e limitada a 60 vh. A 480 px, o boot e a marca ficam mais compactos. [Layout e breakpoints](web/style.css)
 - **Expo.** O mapa preenche a tela. No iOS, a tela mostra o mapa-base do Apple Maps e o HUD. No Android, ela também exibe a camada de calor nativa do Google Maps. O quadro de estado respeita a área segura superior. **PÂNICO** fica no canto inferior direito, acima das abas `MAPA / SENSORES`. As telas de sensores usam a mesma família de painéis e botões. [Mapa nativo](mobile/src/screens/MapScreen.tsx) · [Navegação](mobile/src/navigation/RootNavigator.tsx)
 
 ## Elevation & Depth
 
-- **React.** As scanlines têm baixa opacidade e deixam passar os gestos no mapa. Os colchetes enquadram o mapa e o brilho do CRT realça seleção. A barra de camadas e a legenda têm fundos escuros translúcidos com desfoque localizado. O filtro escuro atua nos tiles do mapa-base. O calor mantém sua própria cor e transparência sobre as ruas. [Camadas do mapa](src/styles/index.css) · [HUD e painéis](src/app/App.tsx) · [Renderização WebGL](src/map/CrimeMap.js)
+- **React.** As scanlines têm baixa opacidade e deixam passar os gestos no mapa. Os colchetes enquadram o mapa e o brilho do CRT realça seleção. A barra de camadas e a legenda têm fundos escuros translúcidos com desfoque localizado. Os popups retomam a moldura e a tipografia CRT. O filtro escuro atua nos tiles do mapa-base. WebGL e Canvas compartilham a escala de cores do calor. [Camadas do mapa](src/styles/index.css) · [HUD e painéis](src/app/App.tsx) · [Renderização do calor](src/map/CrimeMap.js)
 - **HTML/JS.** Scanlines, vinheta, grade discreta e brilho de fósforo se sobrepõem ao mapa. O boot usa linhas sequenciais. Pulso e piscada assinalam conexão, alertas e cursor. [Efeitos e keyframes](web/style.css)
 - **Expo.** A profundidade vem do HUD preto translúcido sobre o mapa e do contorno verde fino. A reação ao toque no botão CRT é um preenchimento verde leve. [HUD e interação](mobile/src/components/Crt.tsx) · [Mapa](mobile/src/screens/MapScreen.tsx)
 
@@ -99,9 +106,10 @@ Esta referência parte da interface em `44d58eb`, revisão anterior ao trabalho 
 
 ## Components
 
-- **Barra de camadas React.** Ícone sobre rótulo. Ativação combina âmbar mais forte, preenchimento sutil, brilho e traço inferior. Cada camada mantém sua posição no grupo. [QuickBar](src/app/App.tsx)
-- **Filtros React.** Chips de contorno usam losango vazado no estado inativo e cheio no ativo. Em conjunto com cor e preenchimento, o glifo torna a seleção reconhecível. [Chip](src/app/App.tsx)
+- **Barra de camadas React.** Ícone sobre rótulo. Ativação combina âmbar mais forte, preenchimento sutil, brilho e traço inferior. Cada camada mantém sua posição no grupo e tem área de toque de pelo menos 44 × 44 px a partir de 320 px de largura. [QuickBar](src/app/App.tsx)
+- **Filtros React.** A gaveta acessível a partir do mapa reutiliza os controles da aba STATS. Chips de contorno têm altura mínima de 32 px e usam losango vazado no estado inativo e cheio no ativo. O botão de salvar confirma a persistência local. [Filtros e chips](src/app/App.tsx)
 - **Legenda React.** Cabeçalho recolhível, identificação da fatia, rampa proporcional, quatro faixas com limites numéricos, contagem e mediana. [RiskLegend](src/app/App.tsx)
+- **Inspeção do mapa React.** Com **HEAT** ativo, o toque abre um popup que identifica a fatia carregada. Quando há uma amostra a até 500 m, a leitura inclui seu peso relativo e sua distância até o ponto tocado. [Inspeção](src/map/CrimeMap.js)
 - **Questionário React.** Uma tela rolável agrupa o conteúdo em seções expansíveis. Opções selecionadas usam borda e fundo âmbar. Ações de pular e avançar pertencem ao rodapé do fluxo. [Questionário](src/app/components/Questionnaire.tsx)
 - **HUD e gaveta HTML/JS.** O HUD reúne marca e estado do sistema. A gaveta organiza camadas e filtros. Contadores, contexto e alertas têm áreas próprias. [Estrutura](web/index.html) · [Estilo CRT](web/style.css)
 - **Botão e HUD Expo.** `CrtButton` define os estados normal, pressionado, desabilitado e de ação crítica. `Hud` reúne título e linhas de status dentro de uma moldura fina. O botão **PÂNICO** mantém sua posição e cor próprias. [CrtButton e Hud](mobile/src/components/Crt.tsx) · [Pânico](mobile/src/components/PanicButton.tsx)

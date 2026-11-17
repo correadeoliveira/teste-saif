@@ -1,17 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { CrimeMap } from "../../map/CrimeMap.js";
-
-// We keep these imports for types or just use global L
-declare global {
-  interface Window {
-    L: any;
-  }
-}
 
 interface RealMapProps {
   activeTypes: Set<string>;
-  activeLayers: Set<string>; // changed from activeLayer string
-  activeGroups: Set<string>;
+  activeLayers: Set<string>;
   activeTimes: Set<string>;
   blockedSafePoints?: Set<string>;
   customSafePoints?: any[];
@@ -19,11 +11,12 @@ interface RealMapProps {
 }
 
 export function RealMap({ 
-  activeTypes, activeLayers, activeGroups, activeTimes,
+  activeTypes, activeLayers, activeTimes,
   blockedSafePoints = new Set(), customSafePoints = [], customRiskAreas = []
 }: RealMapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const crimeMapRef = useRef<any>(null);
+  const crimeMapRef = useRef<CrimeMap | null>(null);
+  const period = activeTimes.size === 1 ? Array.from(activeTimes)[0] : "all";
 
   useEffect(() => {
     if (mapContainerRef.current && !crimeMapRef.current) {
@@ -40,31 +33,26 @@ export function RealMap({
   }, []);
 
   useEffect(() => {
-    if (crimeMapRef.current) {
-      const filters = {
-        types: Array.from(activeTypes).map(t => t.toLowerCase()),
-        period: activeTimes.size === 1 ? Array.from(activeTimes)[0].toLowerCase() : 'all',
-      };
-      crimeMapRef.current.applyFilters(filters);
+    crimeMapRef.current?.applyFilters({ types: Array.from(activeTypes), period });
+  }, [activeTypes, period]);
 
-      crimeMapRef.current.showHeatmap(activeLayers.has("heat"));
-      crimeMapRef.current.markerManager.showSafePoints(activeLayers.has("safe"));
-      
-      if (activeLayers.has("luz")) {
-        crimeMapRef.current.lightingLayer.show();
-      } else {
-        crimeMapRef.current.lightingLayer.hide();
-      }
-      
-      if (activeLayers.has("bus")) {
-        crimeMapRef.current.markerManager.showTransport(true);
-      } else {
-        crimeMapRef.current.markerManager.showTransport(false);
-      }
+  useEffect(() => {
+    const map = crimeMapRef.current;
+    if (!map) return;
+    map.showHeatmap(activeLayers.has("heat"));
+    map.markerManager.showSafePoints(activeLayers.has("safe"));
+    map.markerManager.showTransport(activeLayers.has("bus"));
+    if (activeLayers.has("luz")) map.lightingLayer.show();
+    else map.lightingLayer.hide();
+    if (activeLayers.has("flow")) map.flowLayer.show(period);
+    else map.flowLayer.hide();
+    if (activeLayers.has("routes")) map.routeManager.show();
+    else map.routeManager.hide();
+  }, [activeLayers, period]);
 
-      crimeMapRef.current.updateCustomPoints(blockedSafePoints, customSafePoints, customRiskAreas);
-    }
-  }, [activeTypes, activeLayers, activeGroups, activeTimes, blockedSafePoints, customSafePoints, customRiskAreas]);
+  useEffect(() => {
+    crimeMapRef.current?.updateCustomPoints(blockedSafePoints, customSafePoints, customRiskAreas);
+  }, [blockedSafePoints, customSafePoints, customRiskAreas]);
 
   return (
     <div 

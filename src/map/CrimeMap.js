@@ -1,5 +1,5 @@
 import { logHeatmap } from '../../shared/web/telemetry.js';
-import L from './leafletSetup.js';
+import L, { CanvasHeatLayer } from './leafletSetup.js';
 import { SP_CENTER, DEFAULT_ZOOM, crimeHeatData, crimesByType } from '../data/MockData.js';
 import { heatmapLoader, HeatmapLoader } from '../data/HeatmapLoader.js';
 import { RouteManager } from './RouteManager.js';
@@ -10,6 +10,9 @@ import { ContactsLayer } from './ContactsLayer.js';
 import { AlertLayer } from './AlertLayer.js';
 import { createLocalBasemap } from './LocalBasemap.js';
 import { computeRiskScale, fallbackScale, gradientToTexture, applyGradientTexture } from './riskScale.js';
+
+const INSPECTION_RADIUS_M = 500;
+const weightFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
 
 export class CrimeMap {
     constructor() {
@@ -42,9 +45,9 @@ export class CrimeMap {
         // Initialize with labels layer
         this.baseLayerLabels.addTo(this.map);
 
-        // Heatmap em WebGL (leaflet-webgl-heatmap) no lugar do leaflet.heat.
+        // Heatmap em WebGL (leaflet-webgl-heatmap), com fallback Canvas 2D.
         //
-        // O canvas 2D custava três coisas que 这里 viram nativas ou somem:
+        // O canvas 2D custava três coisas que aqui viram nativas ou somem:
         //  - `size` em METROS: o kernel tem tamanho geográfico, então o heat
         //    não muda mais entre zooms sem nenhum ajuste manual.
         //  - `alphaRange`: resolve a opacidade total. O shader aplica
@@ -75,6 +78,12 @@ export class CrimeMap {
             gradientTexture: gradientToTexture(fallbackScale().gradient),
             padding: 0.02,
         }).addTo(this.map);
+        this._usesCanvas = !this.heatLayer.gl?.gl;
+        if (this._usesCanvas) {
+            this.map.removeLayer(this.heatLayer);
+            this.heatLayer = new CanvasHeatLayer([], { radius: 26, blur: 22, maxZoom: 14 });
+        }
+        this._heatmapData = null;
         this._currentDatasetKey = 'mock:all';
         this._riskScale = null;
         this._loadSeq = 0;
@@ -130,27 +139,9 @@ export class CrimeMap {
             const { points, count, crimeType, period } = await this._heatmapLoader.loadPoints(typeKey, periodKey);
             if (seq !== this._loadSeq) return { count, source: 'stale' };
 
-            // No WebGL o dado entra por `setData`, que não exige a camada no
-            // mapa: dá para carregar com o heatmap desligado e só desenhar
-            // quando o usuário ligar. (No canvas 2D isso estourava.)
-            this.heatLayer.setData(points);
-
-            // Ganho de intensidade. Este é o ÚNICO ajuste de escala no
-            // pipeline do plugin: `draw()` faz clear → addPoint → update →
-            // multiply → display, e o blit final normaliza por smoothstep(0,1).
-            // `clamp()` existe na lib base mas o plugin nunca chama, então
-            // chamá-lo à mão não mudava nada (a passada de GPU é idempotente).
-            if (this._intensityGain !== 1) this.heatLayer.multiply(this._intensityGain);
-
-            // Recalcula a escala por fatia: a distribuição de pesos muda entre
-            // "tudo", só furto, só noite etc., e os cortes por quantil
-            // acompanham essa mudança em vez de usar faixas fixas. A cor vem
-            // de uma TEXTURA no shader, então os stops viram pixels.
             const scale = computeRiskScale(points, this._intensityMax);
-            if (scale) {
-                this._riskScale = scale;
-                applyGradientTexture(this.heatLayer, gradientToTexture(scale.gradient));
-            }
+            this._riskScale = scale;
+            this._setHeatmapData(points, scale?.gradient ?? fallbackScale().gradient);
 
             this._currentDatasetKey = `real:${crimeType}:${period}`;
 
@@ -162,20 +153,74 @@ export class CrimeMap {
             }
 
             this._heatmapResult = { count, crimeType, period, source: 'real', scale };
+            this._refreshInspection();
             logHeatmap('static', count, performance.now() - started, crimeType !== typeKey || period !== periodKey);
             document.dispatchEvent(new CustomEvent('heatmap:loaded', { detail: this._heatmapResult }));
             return this._heatmapResult;
         } catch {
             if (seq !== this._loadSeq) return { count: 0, source: 'stale' };
             const points = this._mockHeatData(this._activeFilters);
-            this.heatLayer.setData(points);
+            this._setHeatmapData(points, fallbackScale().gradient);
             this._currentDatasetKey = 'mock:all';
             this._riskScale = null;
             const detail = { count: points.length, crimeType: 'all', period: 'all', source: 'mock' };
+            this._heatmapResult = detail;
+            this._refreshInspection();
             logHeatmap('demo', detail.count, performance.now() - started, true);
             document.dispatchEvent(new CustomEvent('heatmap:loaded', { detail }));
             return detail;
         }
+    }
+
+    _setHeatmapData(points, gradient) {
+        this._heatmapData = { points, gradient };
+        if (this._usesCanvas) {
+            if (this.map.hasLayer(this.heatLayer)) this._drawCanvasHeatmap();
+            return;
+        }
+        this.heatLayer.setData(points);
+        if (this._intensityGain !== 1) this.heatLayer.multiply(this._intensityGain);
+        applyGradientTexture(this.heatLayer, gradientToTexture(gradient));
+    }
+
+    _drawCanvasHeatmap() {
+        if (!this._heatmapData) return;
+        const { points, gradient } = this._heatmapData;
+        this.heatLayer.setOptions({ gradient });
+        this.heatLayer.setLatLngs(points);
+    }
+
+    _refreshInspection() {
+        if (this._inspectionPopup?.isOpen()) this._inspectPoint(this._inspectionPopup.getLatLng());
+    }
+
+    _inspectPoint(latlng) {
+        const content = document.createElement('div');
+        const title = document.createElement('div');
+        const detail = document.createElement('div');
+        title.className = 'popup-title';
+        detail.className = 'popup-desc';
+        const result = this._heatmapResult;
+        title.textContent = result?.source === 'real' ? 'Fatia SSP-SP' :
+            result?.source === 'mock' ? 'Fatia de demonstração' : 'Camada de calor';
+
+        let nearest = null;
+        let distance = INSPECTION_RADIUS_M;
+        for (const [lat, lng, weight] of this._heatmapData?.points ?? []) {
+            const candidate = this.map.distance(latlng, [lat, lng]);
+            if (candidate > distance) continue;
+            nearest = weight;
+            distance = candidate;
+        }
+        const slice = result && [result.crimeType, result.period]
+            .filter((value) => value !== 'all').join(' · ');
+        if (slice) title.textContent += ` · ${slice}`;
+        detail.textContent = !result ? 'Carregando a fatia de calor.' : nearest === null
+            ? `Sem amostra da fatia em até ${INSPECTION_RADIUS_M} m.`
+            : `Peso relativo ${weightFormat.format(nearest)} · amostra a ${Math.round(distance)} m`;
+        content.append(title, detail);
+        this._inspectionPopup ??= L.popup({ maxWidth: 256 });
+        this._inspectionPopup.setLatLng(latlng).setContent(content).openOn(this.map);
     }
 
     applyFilters(filters) {
@@ -210,11 +255,15 @@ export class CrimeMap {
 
     showHeatmap(visible) {
         if (visible) {
-            if (!this.map.hasLayer(this.heatLayer)) this.map.addLayer(this.heatLayer);
+            if (!this.map.hasLayer(this.heatLayer)) {
+                this.map.addLayer(this.heatLayer);
+                if (this._usesCanvas) this._drawCanvasHeatmap();
+            }
             if (!this.map.hasLayer(this.baseLayerNoLabels)) this.map.addLayer(this.baseLayerNoLabels);
             if (this.map.hasLayer(this.baseLayerLabels)) this.map.removeLayer(this.baseLayerLabels);
         } else {
             if (this.map.hasLayer(this.heatLayer)) this.map.removeLayer(this.heatLayer);
+            this._inspectionPopup?.remove();
             if (!this.map.hasLayer(this.baseLayerLabels)) this.map.addLayer(this.baseLayerLabels);
             if (this.map.hasLayer(this.baseLayerNoLabels)) this.map.removeLayer(this.baseLayerNoLabels);
         }
@@ -254,6 +303,10 @@ export class CrimeMap {
     }
 
     setupEvents() {
+        this.map.on('click', ({ latlng }) => {
+            if (this.map.hasLayer(this.heatLayer)) this._inspectPoint(latlng);
+        });
+
         this.map.on('mousemove', (e) => {
             const lat = e.latlng.lat.toFixed(4);
             const lng = e.latlng.lng.toFixed(4);
@@ -270,15 +323,15 @@ export class CrimeMap {
             if (zoomEl) zoomEl.textContent = `Z:${this.map.getZoom()}`;
         });
 
-        this.map.on('moveend', () => {
+        const publishPosition = () => {
             const center = this.map.getCenter();
-            this.updateRegionName(center.lat, center.lng);
+            const region = this.updateRegionName(center.lat, center.lng);
             document.dispatchEvent(new CustomEvent('map:moved', {
-                detail: { lat: center.lat, lng: center.lng, bounds: this.map.getBounds() }
+                detail: { lat: center.lat, lng: center.lng, bounds: this.map.getBounds(), region }
             }));
-        });
-
-        this.updateRegionName(SP_CENTER[0], SP_CENTER[1]);
+        };
+        this.map.on('moveend', publishPosition);
+        publishPosition();
     }
 
     updateThreatBadge(level) {
@@ -320,5 +373,6 @@ export class CrimeMap {
 
         const el = document.getElementById('region-display');
         if (el) el.textContent = closest;
+        return closest;
     }
 }

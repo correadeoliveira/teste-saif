@@ -50,6 +50,8 @@ def route_fixture(route, base, available, pending_summaries):
         if "/heatmap_points" in url.path:
             if available and url.path.endswith("/heatmap_points.json"):
                 route.fulfill(json=ARTIFACT)
+            elif available and url.path.endswith("/heatmap_points__roubo__noite.json"):
+                route.fulfill(json={**ARTIFACT, "meta": {"crime_type": "roubo", "period": "noite"}})
             else:
                 route.fulfill(status=404)
         else:
@@ -111,6 +113,73 @@ def smoke_mobile_drawer(browser, base):
     page.close()
 
 
+def smoke_recovered_map_controls(browser, base):
+    page = browser.new_page(viewport={"width": 375, "height": 667}, is_mobile=True, has_touch=True)
+    page.add_init_script("""
+        const getContext = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function(type, ...options) {
+            return type.includes('webgl') ? null : getContext.call(this, type, ...options);
+        };
+    """)
+    summaries = []
+    page.route("**/*", lambda route: route_fixture(route, base, True, summaries))
+    errors = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.goto(base)
+    expect(page.locator('[data-heatmap-source="real"]')).to_be_visible(timeout=15_000)
+    page.get_by_role("button", name="Pular", exact=True).tap()
+    page.get_by_role("button", name="Sim, Pular").tap()
+
+    expect(page.get_by_text("VIGIL_OS")).to_be_visible()
+    expect(page.locator("header time")).to_be_visible()
+    expect(page.locator("header")).to_contain_text("Praça da Sé")
+    layer_box = page.get_by_role("button", name="HEAT", exact=True).bounding_box()
+    nav_box = page.locator("[data-bottom-nav]").bounding_box()
+    assert layer_box["width"] >= 44 and layer_box["height"] >= 44
+    assert layer_box["y"] + layer_box["height"] < nav_box["y"]
+    filters = page.get_by_role("button", name="FILTROS", exact=True)
+    dialog = page.get_by_role("dialog", name="Filtros do mapa")
+    filters.tap()
+    expect(dialog).to_be_visible()
+    for name in ("furto", "outros", "manhã", "tarde", "madrugada"):
+        dialog.get_by_role("button", name=name, exact=True, pressed=True).tap()
+    dialog.get_by_role("button", name="Salvar filtros").tap()
+    expect(dialog.get_by_role("status")).to_have_text("Filtros salvos")
+    dialog.get_by_role("button", name="FECHAR").tap()
+    expect(dialog).to_be_hidden()
+
+    heat = page.get_by_role("button", name="HEAT", exact=True)
+    heat.tap()
+    expect(page.get_by_role("button", name="RISCO ROUBO · NOITE")).to_be_visible()
+    canvas = page.locator("canvas.leaflet-heatmap-layer")
+    expect(canvas).to_have_count(1)
+    page.wait_for_function("""() => {
+        const canvas = document.querySelector('canvas.leaflet-heatmap-layer');
+        if (!canvas?.width || !canvas.height) return false;
+        const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+        return pixels.some((value, index) => index % 4 === 3 && value > 0);
+    }""")
+    page.locator("#map").tap()
+    popup = page.locator(".leaflet-popup-content")
+    expect(popup).to_contain_text("Fatia SSP-SP · roubo · noite")
+    expect(popup).to_contain_text("Peso relativo 0,8")
+    page.locator(".leaflet-popup-close-button").tap()
+
+    flow = page.get_by_role("button", name="Fluxo simulado")
+    routes = page.get_by_role("button", name="Rotas simuladas")
+    flow.tap()
+    routes.tap()
+    expect(page.get_by_text("Fluxo e rotas simulados")).to_be_visible()
+    expect(canvas).to_have_count(2)
+    expect(page.locator("path.saifen-demo-route")).to_have_count(3)
+    flow.tap()
+    routes.tap()
+    expect(canvas).to_have_count(1)
+    expect(page.locator("path.saifen-demo-route")).to_have_count(0)
+    assert not errors, errors
+    page.close()
+
+
 def main():
     apps = (
         (["node", "tools/serve-web.mjs", "8031"], "http://127.0.0.1:8031/web/"),
@@ -125,6 +194,8 @@ def main():
                 smoke(browser, base)
                 if urlsplit(base).path == "/web/":
                     smoke_mobile_drawer(browser, base)
+                else:
+                    smoke_recovered_map_controls(browser, base)
                 print(f"Web smoke OK: {base}")
         browser.close()
 

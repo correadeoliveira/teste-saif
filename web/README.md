@@ -22,7 +22,10 @@ e do heatmap. Para um aparelho na rede de desenvolvimento, rode
 `SAIFEN_WEB_HOST=0.0.0.0 ./tools/dev-web.sh` e use o IP local no
 `EXPO_PUBLIC_SHARED_BASE` do mobile.
 
-O React salva filtros no navegador. O questionário guarda as respostas
+No React, **FILTROS** abre a gaveta a partir do mapa. Ela compartilha as
+seleções da aba **STATS** e salva as preferências no navegador. **FLUXO** e
+**ROTAS** ativam as camadas de demonstração. A barra superior mostra a
+região do mapa e o horário de São Paulo. O questionário guarda as respostas
 localmente e pode usar `POST /api/behavior-profile` no Vite local com origem
 do próprio servidor. Esse endpoint valida JSON e tamanho e grava em
 `data/profiles/`.
@@ -67,13 +70,18 @@ barra de contexto. A legenda do React mostra a fatia carregada quando a
 camada de calor tem uma escala calculada. `shared/summary.json` descreve
 o total da base SSP-SP. O console registra a origem, duração, contagem e
 ocorrência de fallback do carregamento.
+O React usa Canvas 2D para manter a camada de calor disponível quando o
+navegador não consegue inicializar WebGL.
+Com **HEAT** ativo, tocar no mapa mostra o peso da amostra mais próxima da
+fatia em até 500 m ou indica que o recorte carregado não tem amostra ali.
 
 ## CI
 
 O CI valida o HTML e os imports relativos, testa o loader e os fallbacks,
 compila o Vite e abre os dois clientes em Chromium com as respostas de
-rede simuladas. O smoke test também abre, fecha e reabre a gaveta de filtros
-do HTML/JS em uma tela móvel. [Playbook de qualidade](../docs/agents/quality.md).
+rede simuladas. O smoke test abre as gavetas por toque, aplica filtros,
+verifica as camadas simuladas e confere o desenho com WebGL desativado.
+[Playbook de qualidade](../docs/agents/quality.md).
 
 ## Deploy (futuro)
 

@@ -1,4 +1,5 @@
 import { peopleFlow } from '../data/MockData.js';
+import { CanvasHeatLayer } from './leafletSetup.js';
 
 export class FlowLayer {
     constructor(map) {
@@ -23,10 +24,10 @@ export class FlowLayer {
         const data = this._buildData(this._currentSlot);
 
         if (this._heatLayer) {
-            this._heatLayer.setLatLngs(data);
             this._heatLayer.addTo(this.map);
+            this._heatLayer.setLatLngs(data);
         } else {
-            this._heatLayer = L.heatLayer(data, {
+            this._heatLayer = new CanvasHeatLayer(data, {
                 radius: 35,
                 blur: 30,
                 maxZoom: 17,

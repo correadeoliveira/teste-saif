@@ -14,3 +14,33 @@
 .leaflet-tile-pane .saifen-basemap-nolabels {
   filter: invert(1) hue-rotate(180deg) brightness(0.72) contrast(0.88) saturate(0.2);
 }
+
+.leaflet-container .leaflet-popup-content-wrapper,
+.leaflet-container .leaflet-popup-tip {
+  background: #0f0c00;
+  color: #ffcb00;
+  border: 1px solid rgba(255, 203, 0, 0.28);
+}
+
+.leaflet-container .leaflet-popup-content-wrapper {
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65);
+}
+
+.leaflet-container .leaflet-popup-close-button,
+.leaflet-container .leaflet-popup-close-button:hover {
+  color: #ffcb00;
+}
+
+.leaflet-container .popup-type,
+.leaflet-container .popup-meta {
+  color: #d9a600;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.leaflet-container .popup-title {
+  margin-block: 4px;
+  font-weight: 600;
+}

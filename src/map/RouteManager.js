@@ -8,14 +8,17 @@ export class RouteManager {
     }
 
     prepareSafeRoutes() {
+        const renderer = L.svg();
         safeRoutes.forEach(route => {
             // Glow track (fundo)
             const bgLine = L.polyline(route.coords, {
                 color: route.color,
                 weight: 10,
                 opacity: 0.08,
+                interactive: false,
                 lineCap: 'round',
                 lineJoin: 'round',
+                renderer,
             });
 
             // Linha principal tracejada
@@ -26,10 +29,13 @@ export class RouteManager {
                 lineCap: 'round',
                 lineJoin: 'round',
                 dashArray: '8, 12',
+                renderer,
+                className: 'saifen-demo-route',
+                bubblingMouseEvents: false,
             });
 
             const popup = `<div class="popup-inner">
-                <div class="popup-type"><span class="dot safe"></span>ROTA SEGURA</div>
+                <div class="popup-type"><span class="dot safe"></span>ROTA SIMULADA</div>
                 <div class="popup-title">→ ${route.name}</div>
                 <div class="popup-desc">${route.desc}</div>
             </div>`;
@@ -45,14 +51,14 @@ export class RouteManager {
         if (this._visible) return;
         this._visible = true;
         this._routeGroup.addTo(this.map);
-        if (alertSystem) alertSystem.showToast('Rotas seguras ativadas — 3 rotas disponíveis', 'success');
+        if (alertSystem) alertSystem.showToast('Rotas simuladas ativadas', 'success');
     }
 
     hide(alertSystem) {
         if (!this._visible) return;
         this._visible = false;
         this.map.removeLayer(this._routeGroup);
-        if (alertSystem) alertSystem.showToast('Rotas seguras desativadas', 'info');
+        if (alertSystem) alertSystem.showToast('Rotas simuladas desativadas', 'info');
     }
 
     toggle(alertSystem) {
