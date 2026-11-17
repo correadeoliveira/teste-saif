@@ -1,12 +1,33 @@
 {
-  "run_id": "20260928T003346Z_d857153eff88ab5e",
-  "fingerprint": "d857153eff88ab5e",
+  "run_id": "20261117T081227379856Z_dd660c983e026fcc",
+  "fingerprint": "dd660c983e026fcc",
   "model": "kde",
-  "model_version": "0.2.0",
+  "model_version": "0.3.0",
   "source_file": "CelularesSubtraidos_2026.xlsx",
   "source_sha256": "982405a27e44b3b51d332c7b96e5c4e5db55c7be63e0d06afe005a252f58a336",
-  "generated_at": "2026-09-28T00:33:46+00:00",
+  "generated_at": "2026-11-17T08:13:14+00:00",
   "disclaimer": "Incidência observada de boletins de ocorrência georreferenciados. Não é probabilidade individual nem a estatística oficial RES 160/516.",
+  "artifacts": {
+    "heatmaps/crimes.geojson": "132031a58ff2526fd081eb9a2f6060df8c0eb2b2766b9426f8b4a195c84ae679",
+    "heatmaps/heatmap_grid.geojson": "592c25c1b8749f635240189ed1865ef473f4eb690e699946821f4b857eb897af",
+    "heatmaps/heatmap_points.json": "6aa0608f22ee41dec690c1cc5779291630c259de55ed1d2892180b2ee6ed2515",
+    "heatmaps/heatmap_points__furto.json": "22d43b44cfae53df7043b1f6ac6ebc4ad38d8ebcc71ece8627ee1324c86abb9b",
+    "heatmaps/heatmap_points__furto__madrugada.json": "617d0e3c44b1cb44397bd84d35a5be68c12a4441ab1668758e466e2ab85a7790",
+    "heatmaps/heatmap_points__furto__manha.json": "278ac154db2a4c829efdff8e0635b392d8e194a1c41d5fb2b63c59aa8b827e9a",
+    "heatmaps/heatmap_points__furto__noite.json": "a342d4234d84b1ec75f7f6f7e5543594432735d4894709bc998bc1c0f6ace25b",
+    "heatmaps/heatmap_points__furto__tarde.json": "930d98f87cb1df8ae0c7b2aba8d47d7bd1e27340d8daaee48a4a94df0cd2a47e",
+    "heatmaps/heatmap_points__outros.json": "0a4a0d1c6359152fa15af42ca7227ebc3a44617e70faf42b06a7ae505408c9f6",
+    "heatmaps/heatmap_points__outros__madrugada.json": "6875970a0897cf4aea6141569c083d926e5cea08f1669b0eea8a1a3319d20830",
+    "heatmaps/heatmap_points__outros__manha.json": "06824b1710803808cb88ded219bd4122b0c08914da767052bfa47844fcdad2f3",
+    "heatmaps/heatmap_points__outros__noite.json": "9eb2832d1a01ae29ab01b859e2c77185afd7b51964ebd663b10c1952215ad1a4",
+    "heatmaps/heatmap_points__outros__tarde.json": "08ec2e8f84bc79c7bb9850151df6f30a936fb357557561f238ad4a2c266c7c45",
+    "heatmaps/heatmap_points__roubo.json": "07ae64010bc7d0b309a9c43f705678c14faa7a54796c4d5791b51a676a88e8a4",
+    "heatmaps/heatmap_points__roubo__madrugada.json": "bc70bc8f13a1b48726ff067a8d6f32478d3c61103769201fad746ba645e73ed6",
+    "heatmaps/heatmap_points__roubo__manha.json": "5b87bd6a196f4f21afb885858735b8d10933fa343ed94355878a98739114f916",
+    "heatmaps/heatmap_points__roubo__noite.json": "1d3e5903e5fa55c326f6c7b53695245ff46237eb8dda9c3f68a86320360702ad",
+    "heatmaps/heatmap_points__roubo__tarde.json": "9ac8d22e5bebe7e3a696b1c42bb9abe3b16ff7245961f2b5d506445c896ae589",
+    "summary.json": "83a44f8b0ded27c13c558b0f9fbf2f3717bdfc64ff3c354b41d8eaabb4c2ae85"
+  },
   "heatmaps": "shared/heatmaps",
-  "run_dir": "shared/runs/20260928T003346Z_d857153eff88ab5e"
+  "run_dir": "shared/runs/20261117T081227379856Z_dd660c983e026fcc"
 }
