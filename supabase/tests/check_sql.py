@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Contrato estático das RPCs (sem Postgres/Docker).
 
-Confere que as migrations existem na ordem certa e que a 006 não
-regrediu: device_id obrigatório, clamp de raio, limiares iguais a
+Confere migrations, contrato da RPC vigente, device_id obrigatório, clamp de raio, limiares iguais a
 mobile/src/services/zone.ts.
 """
 
@@ -16,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SQL_DIR = ROOT / "supabase" / "migrations"
 ZONE_TS = ROOT / "mobile" / "src" / "services" / "zone.ts"
 SQL_006 = SQL_DIR / "20260621000006_report_crime_and_zone_risk.sql"
+REPORT_SQL = SQL_DIR / "20261117000001_serialize_reports_by_device.sql"
 
 EXPECTED_MIGRATIONS = [
     "20260621000001_enable_postgis.sql",
@@ -24,6 +24,7 @@ EXPECTED_MIGRATIONS = [
     "20260621000004_create_views_and_rpcs.sql",
     "20260621000005_create_behavior_profiles.sql",
     "20260621000006_report_crime_and_zone_risk.sql",
+    REPORT_SQL.name,
 ]
 
 
@@ -50,14 +51,18 @@ def main() -> None:
     compact = squeeze(sql)
     zone = ZONE_TS.read_text(encoding="utf-8")
 
-    if "if p_device_id is null" not in sql:
+    report = REPORT_SQL.read_text(encoding="utf-8")
+    if "if p_device_id is null" not in report:
         fail("006 deve rejeitar p_device_id null")
-    if "device_required" not in sql:
+    if "device_required" not in report:
         fail("006 deve devolver error device_required")
     if "least(greatest(coalesce(p_radius_meters,250),50),2000)" not in compact:
         fail("006 deve clampar o raio em [50, 2000]")
-    if "securitydefiner" not in compact:
+    if "securitydefiner" not in squeeze(report):
         fail("report_crime precisa de SECURITY DEFINER (MVP anon)")
+
+    if "pg_advisory_xact_lock" not in report:
+        fail("report_crime precisa serializar a operação por dispositivo")
 
     for needle in (
         "maxdensity>=0.75",

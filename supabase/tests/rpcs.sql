@@ -1,6 +1,5 @@
--- Testes das RPCs report_crime e zone_risk (opcional).
--- Exige Postgres+PostGIS. O CI atual NÃO executa este arquivo:
--- usa supabase/tests/check_sql.py (contrato estático, sem Docker).
+-- Exercita as RPCs em Postgres com PostGIS, usando dados de fixture.
+begin;
 
 create or replace function tests_fail(msg text, got json default null)
 returns void
@@ -19,22 +18,22 @@ declare
     device uuid := '11111111-1111-4111-8111-111111111111';
 begin
     r := public.report_crime(-23.55, -46.63, 'furto', null);
-    if r->>'ok' <> 'false' or r->>'error' <> 'device_required' then
+    if r->>'ok' is distinct from 'false' or r->>'error' is distinct from 'device_required' then
         perform tests_fail('report_crime sem device deve falhar', r);
     end if;
 
     r := public.report_crime(200, -46.63, 'furto', device);
-    if r->>'error' <> 'invalid_coords' then
+    if r->>'error' is distinct from 'invalid_coords' then
         perform tests_fail('lat inválida', r);
     end if;
 
     r := public.report_crime(-23.55, -46.63, 'furto', device);
-    if r->>'ok' <> 'true' or r->>'crime_type' <> 'furto' then
+    if r->>'ok' is distinct from 'true' or r->>'crime_type' is distinct from 'furto' then
         perform tests_fail('primeiro relato deve passar', r);
     end if;
 
     r := public.report_crime(-23.55, -46.63, 'roubo', device);
-    if r->>'error' <> 'rate_limited' then
+    if r->>'error' is distinct from 'rate_limited' then
         perform tests_fail('segundo relato em 2 min deve ser rate_limited', r);
     end if;
 end
@@ -47,17 +46,17 @@ declare
     r json;
 begin
     r := public.zone_risk(-24.5, -47.5, 99999);
-    if (r->>'radius_meters')::int <> 2000 then
+    if (r->>'radius_meters')::int is distinct from 2000 then
         perform tests_fail('raio 99999 deve clampar em 2000', r);
     end if;
 
     r := public.zone_risk(-24.5, -47.5, 10);
-    if (r->>'radius_meters')::int <> 50 then
+    if (r->>'radius_meters')::int is distinct from 50 then
         perform tests_fail('raio 10 deve clampar em 50', r);
     end if;
 
     r := public.zone_risk(-24.5, -47.5, 250);
-    if r->>'level' <> 'low' then
+    if r->>'level' is distinct from 'low' then
         perform tests_fail('área vazia deve ser low', r);
     end if;
 end
@@ -77,7 +76,7 @@ begin
         values ('ZONE-M-' || i, lat, lng, 'furto', 'tarde', 'S.PAULO', 'test');
     end loop;
     r := public.zone_risk(lat, lng, 250);
-    if r->>'level' <> 'medium' or (r->>'nearby_count')::int < 3 then
+    if r->>'level' is distinct from 'medium' or coalesce((r->>'nearby_count')::int, 0) < 3 then
         perform tests_fail('3 BOs → medium', r);
     end if;
 
@@ -86,7 +85,7 @@ begin
         values ('ZONE-H-' || i, lat, lng, 'furto', 'tarde', 'S.PAULO', 'test');
     end loop;
     r := public.zone_risk(lat, lng, 250);
-    if r->>'level' <> 'high' then
+    if r->>'level' is distinct from 'high' then
         perform tests_fail('8 BOs → high', r);
     end if;
 
@@ -95,7 +94,7 @@ begin
         values ('ZONE-C-' || i, lat, lng, 'furto', 'tarde', 'S.PAULO', 'test');
     end loop;
     r := public.zone_risk(lat, lng, 250);
-    if r->>'level' <> 'critical' then
+    if r->>'level' is distinct from 'critical' then
         perform tests_fail('20 BOs → critical', r);
     end if;
 end
@@ -117,10 +116,10 @@ begin
         )
     );
     r := public.zone_risk(lat, lng, 250);
-    if r->>'level' <> 'critical' then
+    if r->>'level' is distinct from 'critical' then
         perform tests_fail('density 0.75 → critical', r);
     end if;
 end
 $$;
 
-drop function tests_fail(text, json);
+rollback;

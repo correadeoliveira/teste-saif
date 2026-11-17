@@ -22,7 +22,7 @@ create index if not exists heatmap_grid_type_idx
     on public.heatmap_grid (crime_type, generated_at desc);
 
 comment on table public.heatmap_grid is
-    'Grade KDE por tipo de crime. Substituída inteiramente a cada ' ||
+    'Grade KDE por tipo de crime. Substituída inteiramente a cada '
     'execução do pipeline (truncate + insert).';
 
 -- ═══════════════════════════════════════════════════
@@ -43,5 +43,5 @@ create table if not exists public.pipeline_runs (
 );
 
 comment on table public.pipeline_runs is
-    'Audit log das execuções do pipeline Python. ' ||
+    'Audit log das execuções do pipeline Python. '
     'Útil para rastrear quando o heatmap atual foi gerado.';

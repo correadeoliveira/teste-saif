@@ -46,5 +46,5 @@ create index if not exists crimes_occurred_at_idx
 alter table public.crimes replica identity full;
 
 comment on table public.crimes is
-    'Boletins de ocorrência (SSP-SP + reports do app mobile). ' ||
+    'Boletins de ocorrência (SSP-SP + reports do app mobile). '
     'Ingerido por pipeline/scripts/push_to_supabase.py.';
