@@ -1,19 +1,31 @@
 name: pipeline · build heatmaps
 
-# Reprocessa heatmaps quando uma nova planilha entra em data/raw/
-# ou o pipeline Python é atualizado. Commita os artefatos de volta
-# no repositório (shared/*), prontos para o web e o mobile.
-
 on:
   push:
     branches: [main]
     paths:
-      - "data/raw/**.xlsx"
-      - "pipeline/**"
+      - "data/raw/**/*.xlsx"
+      - "pipeline/saifen_pipeline/**"
+      - "pipeline/pyproject.toml"
+      - "pipeline/requirements.txt"
+      - "shared/schema/**"
+      - "tools/pipeline-summary.py"
       - ".github/workflows/pipeline.yml"
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Reconstruir mesmo quando o inventário atual for válido"
+        type: boolean
+        default: false
   schedule:
-    - cron: "0 6 * * 1"     # toda segunda 06:00 UTC
+    - cron: "0 6 * * 1"
+
+concurrency:
+  group: heatmap-publication-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -23,64 +35,64 @@ jobs:
         working-directory: pipeline
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: pipeline/requirements.txt
-
-      - name: Install
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov jsonschema ruff
-
-      - name: Tests before train
-        run: pytest -q
+          cache: pip
+          cache-dependency-path: pipeline/pyproject.toml
+      - run: pip install -e ".[test]"
+      - run: pytest -q --cov=saifen_pipeline --cov-fail-under=70
 
   build-heatmaps:
     needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    defaults:
-      run:
-        working-directory: pipeline
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: pipeline/requirements.txt
-
-      - name: Install dependencies
+          cache: pip
+          cache-dependency-path: pipeline/pyproject.toml
+      - run: pip install -e pipeline
+      - name: Build and validate heatmaps
+        env:
+          FORCE_UPDATE: ${{ inputs.force }}
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Run pipeline
-        run: python scripts/run_pipeline.py --force
-
-      - name: Commit generated artifacts
+          set -o pipefail
+          args=()
+          if [[ "$FORCE_UPDATE" == "true" ]]; then args+=(--force); fi
+          python -m saifen_pipeline update --year 2026 --model kde "${args[@]}" \
+            | tee "$RUNNER_TEMP/heatmap-events.jsonl"
+      - name: Report data quality, metrics and result
+        if: always()
+        run: python tools/pipeline-summary.py heatmap "$RUNNER_TEMP/heatmap-events.jsonl" >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish generated heatmaps to main
         if: github.ref == 'refs/heads/main'
-        working-directory: ${{ github.workspace }}
         run: |
-          git config user.name  "saifen-bot"
-          git config user.email "saifen-bot@users.noreply.github.com"
-          git add shared/
+          git add -A -- shared/heatmaps shared/current_run.json shared/summary.json
           if git diff --staged --quiet; then
-            echo "Nenhuma mudança nos heatmaps."
+            echo "Publicação no main: inventário sem alterações." >> "$GITHUB_STEP_SUMMARY"
           else
-            git commit -m "chore(shared): rebuild heatmaps $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git push
+            git config user.name saifen-bot
+            git config user.email saifen-bot@users.noreply.github.com
+            git commit -m "chore(shared): rebuild heatmaps"
+            if git push origin HEAD:main; then
+              echo "Publicação no main: commit $(git rev-parse --short HEAD)." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Publicação no main falhou. Confira a ponta da branch e reexecute na revisão atual." >> "$GITHUB_STEP_SUMMARY"
+              exit 1
+            fi
           fi
-
-      - name: Upload artifacts
+      - name: Upload generated artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: shared-${{ github.sha }}
-          path: shared/
+          name: heatmap-${{ github.sha }}
+          path: |
+            shared/current_run.json
+            shared/summary.json
+            shared/heatmaps/
           retention-days: 30

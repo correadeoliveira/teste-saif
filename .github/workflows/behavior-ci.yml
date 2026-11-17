@@ -2,14 +2,15 @@ name: behavior · ci
 
 on:
   push:
-    paths:
+    paths: &paths
       - "pipeline/behavior/**"
       - "shared/behavior/**"
+      - "shared/schema/behavior_model.schema.json"
+      - "mobile/assets/behavior/model.json"
+      - "tools/pipeline-summary.py"
       - ".github/workflows/behavior-ci.yml"
   pull_request:
-    paths:
-      - "pipeline/behavior/**"
-      - "shared/behavior/**"
+    paths: *paths
 
 jobs:
   test:
@@ -30,3 +31,11 @@ jobs:
           ruff check --select E,F .
       - name: Pytest
         run: pytest -q
+
+      - name: Reproduce synthetic training and metrics
+        run: |
+          python -m behavior_pipeline generate-demo
+          python -m behavior_pipeline train
+          python -m behavior_pipeline evaluate
+          python -m behavior_pipeline export-model
+          python ../../tools/pipeline-summary.py behavior >> "$GITHUB_STEP_SUMMARY"

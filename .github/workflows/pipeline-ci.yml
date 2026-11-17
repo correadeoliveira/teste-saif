@@ -2,20 +2,16 @@ name: pipeline · ci
 
 on:
   push:
-    paths:
+    paths: &paths
       - "pipeline/**"
       - "shared/schema/**"
       - "shared/current_run.json"
-      - "shared/heatmaps/*.json"
+      - "shared/heatmaps/**"
+      - "shared/summary.json"
       - "shared/behavior/model.json"
       - ".github/workflows/pipeline-ci.yml"
   pull_request:
-    paths:
-      - "pipeline/**"
-      - "shared/schema/**"
-      - "shared/current_run.json"
-      - "shared/heatmaps/*.json"
-      - "shared/behavior/model.json"
+    paths: *paths
 
 jobs:
   test:
@@ -35,7 +31,7 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[test,dev]"
+          pip install -e ".[test]" ruff
 
       - name: Ruff
         run: |
@@ -43,4 +39,4 @@ jobs:
           ruff format --check .
 
       - name: Pytest + coverage
-        run: pytest -q --cov=saifen_pipeline --cov-fail-under=50
+        run: pytest -q --cov=saifen_pipeline --cov-fail-under=70

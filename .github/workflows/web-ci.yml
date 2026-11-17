@@ -2,57 +2,51 @@ name: web · ci
 
 on:
   push:
-    paths:
+    paths: &paths
+      - "src/**"
       - "web/**"
-      - "shared/heatmaps/heatmap_points.json"
+      - "tools/**"
+      - "shared/web/**"
+      - "shared/heatmaps/**"
+      - "shared/current_run.json"
+      - "shared/summary.json"
+      - "vite.config.ts"
+      - "index.html"
+      - "postcss.config.mjs"
+      - "package*.json"
       - ".github/workflows/web-ci.yml"
   pull_request:
-    paths:
-      - "web/**"
-      - "shared/heatmaps/heatmap_points.json"
+    paths: *paths
+
+permissions:
+  contents: read
 
 jobs:
-  lint-html:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Validate HTML (errors only)
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Node dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Validate standalone HTML and imports
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y tidy
-          # tidy: 0 = ok, 1 = warnings, 2 = errors. Falhar só em erros estruturais.
-          set +e
-          tidy -utf8 -errors -q \
-            --new-blocklevel-tags "header,footer,aside,nav,section,main,button" \
-            web/index.html
-          code=$?
-          set -e
-          if [ "$code" -ge 2 ]; then
-            echo "tidy reported errors (exit $code)"
-            exit 1
-          fi
-
-      - name: Sanity check imports
+          status=0
+          tidy -utf8 -errors -q --new-blocklevel-tags "header,aside,footer" web/index.html || status=$?
+          test "$status" -lt 2
+          node tools/check-web-imports.mjs
+      - run: npm test
+      - run: npm run build
+      - name: Smoke test both web clients
         run: |
-          set -e
-          missing=0
-          while IFS= read -r path; do
-            [[ -f "web/src/$path" || -f "web/$path" ]] || { echo "Missing: $path"; missing=1; }
-          done < <(grep -rhoE "from\s+'[./].+\.js'" web/src/ | sed -E "s/from\s+'(.+)'/\1/")
-          exit $missing
-
-      - name: Heatmap contract
-        run: |
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-          p = Path("shared/heatmaps/heatmap_points.json")
-          assert p.is_file(), "missing shared/heatmaps/heatmap_points.json"
-          payload = json.loads(p.read_text())
-          assert isinstance(payload.get("meta"), dict), "meta object required"
-          assert "crime_type" in payload["meta"]
-          assert isinstance(payload.get("points"), list) and payload["points"], "points[] required"
-          assert isinstance(payload.get("count"), int)
-          print("heatmap_points ok", payload["meta"].get("crime_type"), "n=", payload["count"])
-          PY
+          pip install playwright==1.60.0
+          python -m playwright install --with-deps chromium
+          python web/test/smoke.py

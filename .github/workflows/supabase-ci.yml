@@ -1,26 +1,52 @@
 name: supabase · ci
 
-# Sem Docker/PostGIS neste ciclo: o contrato das RPCs é checado no SQL
-# versionado (device_id, clamp de raio, limiares = zone.ts).
-
 on:
   push:
-    paths:
+    paths: &paths
       - "supabase/**"
       - "mobile/src/services/zone.ts"
       - ".github/workflows/supabase-ci.yml"
   pull_request:
-    paths:
-      - "supabase/**"
-      - "mobile/src/services/zone.ts"
+    paths: *paths
+
+permissions:
+  contents: read
 
 jobs:
   sql-contract:
     runs-on: ubuntu-latest
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: saifen_test
+      PGUSER: postgres
+      PGPASSWORD: saifen_ci
+    services:
+      postgres:
+        image: postgis/postgis:15-3.7
+        env:
+          POSTGRES_DB: saifen_test
+          POSTGRES_PASSWORD: saifen_ci
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U postgres -d saifen_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Static RPC contract
-        run: python3 supabase/tests/check_sql.py
+      - run: python3 supabase/tests/check_sql.py
+      - name: Execute migrations and RPC contracts
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+          psql -X -v ON_ERROR_STOP=1 -f supabase/tests/roles.sql
+          for file in supabase/migrations/*.sql; do
+            psql -X -v ON_ERROR_STOP=1 -f "$file"
+          done
+          psql -X -v ON_ERROR_STOP=1 -f supabase/tests/rpcs.sql
+          python3 supabase/tests/check_concurrent_reports.py

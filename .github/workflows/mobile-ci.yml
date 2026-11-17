@@ -2,12 +2,13 @@ name: mobile · ci
 
 on:
   push:
-    paths:
+    paths: &paths
       - "mobile/**"
+      - "shared/behavior/**"
+      - "shared/schema/behavior_model.schema.json"
       - ".github/workflows/mobile-ci.yml"
   pull_request:
-    paths:
-      - "mobile/**"
+    paths: *paths
 
 jobs:
   typecheck:
@@ -25,12 +26,12 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
 
       - name: Install
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: TypeScript
         run: npm run typecheck
 
-      - name: Unit tests (zone, crimes, profile)
+      - name: Unit tests
         run: npm test
 
       - name: Inference parity (Python fixture)
