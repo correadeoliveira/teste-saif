@@ -6,24 +6,26 @@
 
 ## Como rodar localmente
 
-O frontend é puro HTML + ES6 modules — sem build step. Mas precisa de
-um HTTP server para que os imports funcionem e para resolver
-`/shared/heatmaps/*` a partir da raiz do monorepo.
+Os dois clientes usam o contrato de `/shared/heatmaps/` e o loader em
+`shared/web/heatmap-loader.js`. Use Node 22 na raiz do monorepo.
 
 ```bash
-# Da raiz do monorepo:
-./tools/dev-web.sh           # → http://localhost:8000/web/
+npm ci
+npm run dev          # React/Vite em http://localhost:5173/
+./tools/dev-web.sh   # HTML/JS em http://127.0.0.1:8000/web/
+npm run build       # React + artefatos públicos em dist/
+npm run preview     # React de produção em http://localhost:4174/
 ```
 
-Ou manualmente:
+O HTTP server de `dev-web.sh` serve os arquivos públicos do cliente HTML/JS
+e do heatmap. Para um aparelho na rede de desenvolvimento, rode
+`SAIFEN_WEB_HOST=0.0.0.0 ./tools/dev-web.sh` e use o IP local no
+`EXPO_PUBLIC_SHARED_BASE` do mobile.
 
-```bash
-cd <root>                    # raiz do monorepo, NÃO web/
-python3 -m http.server 8000
-open http://localhost:8000/web/
-```
-
-> Servir a partir da raiz é essencial para `/shared/...` resolver.
+O React salva filtros no navegador. O questionário guarda as respostas
+localmente e pode usar `POST /api/behavior-profile` no Vite local com origem
+do próprio servidor. Esse endpoint valida JSON e tamanho e grava em
+`data/profiles/`.
 
 ## Estrutura
 
@@ -57,34 +59,24 @@ web/
         └── RiskAnalyzer.js   # narrativa de risco
 ```
 
-## Cadeia de fallbacks (ordem de prioridade)
+## Fontes e fallbacks
 
-```
-1. Supabase (RPC `get_heatmap_grid`)        ← futuro, se SUPABASE_URL configurado
-2. /shared/heatmaps/heatmap_points.json     ← gerado pelo pipeline Python
-3. src/data/MockData.js (crimeHeatData)     ← sempre disponível, sem dependência
-```
-
-Se nada estiver disponível, o app mostra a simulação local sem
-quebrar — o footer indica qual fonte está ativa.
+Os dois clientes validam a fatia pedida e tentam, em ordem, tipo e período,
+tipo completo, heatmap geral e demonstração. O indicador do mapa mostra a
+origem e a fatia que foi efetivamente carregada. `shared/summary.json`
+descreve o total da base SSP-SP. O console registra a origem, duração,
+contagem e ocorrência de fallback do carregamento.
 
 ## CI
 
-[`.github/workflows/web-ci.yml`](../.github/workflows/web-ci.yml):
-
-- `tidy` em `index.html` (falha só em erros estruturais, exit ≥ 2; HTML5/UTF-8)
-- imports relativos em `web/src/` existem
-- `shared/heatmaps/heatmap_points.json` tem `meta` + `points`
-
-Playbook: [docs/agents/quality.md](../docs/agents/quality.md).
+O CI valida o HTML e os imports relativos, testa o loader e os fallbacks,
+compila o Vite e abre os dois clientes em Chromium com as respostas de
+rede simuladas. [Playbook de qualidade](../docs/agents/quality.md).
 
 ## Deploy (futuro)
 
-- **Vercel/Netlify**: configurar root como a raiz do monorepo
-  (precisa de `/shared/` acessível). Adicionar `vercel.json` redirects
-  se necessário.
-- **GitHub Pages**: usar `actions/deploy-pages` apontando para a raiz
-  do monorepo, mas filtrando para servir só `web/` e `shared/`.
+- **React/Vite**: publicar `dist/`, que já inclui os artefatos públicos.
+- **HTML/JS**: publicar `web/`, `shared/web/` e os artefatos públicos definidos em `tools/public-files.mjs`.
 
 ## Migração para Mapbox GL JS
 

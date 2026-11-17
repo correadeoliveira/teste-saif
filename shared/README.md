@@ -1,8 +1,7 @@
 # `shared/` — Artefatos gerados (pipeline → apps)
 
-> Esta pasta é a **interface** entre o pipeline Python e os clientes
-> JS/TS. Tudo aqui é **gerado**, mas **versionado** para que web e
-> mobile funcionem sem precisar rodar o pipeline localmente.
+> Interface versionada entre o pipeline Python e os clientes JS/TS.
+> Os clientes web compartilham o loader em `web/` dentro desta pasta.
 
 ## Conteúdo
 
@@ -15,6 +14,7 @@ shared/
 ├── summary.json
 ├── current_run.json
 ├── heatmaps/
+├── web/                         # loader e telemetria do heatmap
 ├── runs/<run_id>/               # gitignored
 └── behavior/
 ```
@@ -25,7 +25,7 @@ Contrato do baseline de reconhecimento comportamental (não é heatmap):
 
 ```json
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "logistic_regression",
   "feature_names": ["ax_mean", "...", "sma_accel"],
   "scaler": { "mean": [], "scale": [] },
@@ -42,6 +42,14 @@ Contrato do baseline de reconhecimento comportamental (não é heatmap):
 Gerado por `make -C pipeline/behavior export-model`. O heatmap KDE **não** escreve nesta pasta.
 
 ## Contratos (não quebre sem bump de versão)
+
+### `current_run.json`
+
+O manifesto identifica a execução publicada e inclui `artifacts`, que
+mapeia cada caminho relativo a `shared/` para seu SHA-256. O manifesto é
+trocado depois dos arquivos inventariados. As fatias opcionais ausentes
+usam fallback no cliente. Manifestos anteriores ao inventário continuam
+legíveis e são substituídos no primeiro `update` com a versão atual.
 
 ### `heatmap_points.json` / `heatmap_points__<type>.json`
 

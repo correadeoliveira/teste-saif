@@ -3,7 +3,7 @@
 > Schema e migrations do SAIFEN, aplicados via
 > [Supabase CLI](https://supabase.com/docs/guides/local-development).
 >
-> **Status:** schema versionado (migrations 001–006). Sem projeto cloud
+> **Status:** schema versionado. Sem projeto cloud
 > obrigatório — web e mobile caem nos JSON de `shared/heatmaps/`. Pânico e
 > zona crítica usam RPCs quando `EXPO_PUBLIC_SUPABASE_*` está definido.
 
@@ -18,11 +18,12 @@ supabase/
 │   ├── 20260621000003_create_heatmap_grid.sql
 │   ├── 20260621000004_create_views_and_rpcs.sql
 │   ├── 20260621000005_create_behavior_profiles.sql
-│   └── 20260621000006_report_crime_and_zone_risk.sql
+│   ├── 20260621000006_report_crime_and_zone_risk.sql
+│   └── 20261117000001_serialize_reports_by_device.sql
 ├── tests/
-│   ├── check_sql.py              # contrato estático (CI, sem Docker)
-│   ├── roles.sql                 # opcional: roles anon no Postgres
-│   └── rpcs.sql                  # opcional: RPCs se houver PostGIS
+│   ├── check_sql.py              # contrato estático
+│   ├── roles.sql                 # roles no Postgres temporário
+│   └── rpcs.sql                  # RPCs em PostGIS
 ├── seed.sql
 └── functions/
 ```
@@ -96,7 +97,8 @@ Row Level Security:
 - `crimes`        — SELECT público; INSERT direto só com service_role.
   Relatos do app passam pela RPC `report_crime` (`SECURITY DEFINER`,
   device_id **obrigatório**, 1 BO / device / 2 min, `source_file = mobile-panic`).
-  `GRANT anon` é MVP **sem login**: o UUID do aparelho não é identidade.
+  O banco serializa o limite por dispositivo com lock transacional.
+  O UUID funciona como chave do limite no fluxo anônimo.
 - `heatmap_grid`  — SELECT público; escrita só com service_role.
 - `pipeline_runs` — apenas service_role.
 - `behavior_profiles` — SELECT/INSERT/UPDATE anon (MVP, sem login). JSONL IMU **não** sobe.
@@ -106,13 +108,11 @@ são os mesmos de `mobile/src/services/zone.ts`.
 
 ## Testes SQL
 
-Sem Docker. Contrato estático (CI):
-
-```bash
-python3 supabase/tests/check_sql.py
-```
-
-`rpcs.sql` só faz sentido com Postgres+PostGIS; não entra no CI por enquanto.
+O check estático pode ser rodado com `python3 supabase/tests/check_sql.py`.
+O CI também aplica as migrations em PostgreSQL 15 com PostGIS temporário e
+executa `supabase/tests/rpcs.sql` e `supabase/tests/check_concurrent_reports.py`.
+Para repetir localmente, aponte `psql` para um banco descartável e siga os
+comandos do [workflow](../.github/workflows/supabase-ci.yml).
 
 ## Re-deploy de migrations via CI
 

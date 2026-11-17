@@ -22,7 +22,7 @@ node -v        # esperado: v22.13+ (ex.: v22.23.x)
 ```bash
 cd mobile/
 nvm use 22
-npm install                            # lockfile: package-lock.json
+npm ci                                 # lockfile: package-lock.json
 npx expo install                       # garante versões SDK-compatíveis
 ```
 
@@ -139,7 +139,7 @@ Aplique as migrations `20260621000005_create_behavior_profiles.sql` e
 cd mobile
 nvm use 22
 npm run typecheck
-npm test                 # zone, fila de pânico, enrollment (Node, sem Expo)
+npm test                 # heatmap, inferência, zona, fila de pânico e enrollment
 npm run test:parity      # features/score vs fixture Python
 npm run lint
 ```
@@ -172,16 +172,16 @@ mobile/
     └── components/            # Crt, PanicButton
 ```
 
-## Cadeia de fallbacks (igual ao web)
+## Fontes do mapa e de zona
 
-```
-1. Supabase RPC (get_heatmap_grid, nearby_crimes, zone_risk, report_crime)
-2. fetch( SHARED_HEATMAPS_URL )       ← em dev, server local
-3. require('../../../shared/heatmaps/heatmap_points.json')  ← bundled
-```
+O mapa tenta `get_heatmap_grid` no Supabase, o JSON em
+`EXPO_PUBLIC_SHARED_BASE`, o cache da fatia com origem validada e a
+demonstração local. A tela informa a fonte usada. Quando a RPC
+`zone_risk` está indisponível, alertas só usam o cache real da fatia geral.
 
-Em produção, o app só deve usar opção 1. Opções 2 e 3 são para
-desenvolvimento sem backend ativo.
+A verificação IMU é uma demonstração offline. O CI verifica que a fixture,
+o modelo em `shared/` e o modelo empacotado no app são equivalentes.
+O console registra operações, origem, duração e contagens agregadas.
 
 ## Configuração (.env)
 

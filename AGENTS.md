@@ -26,7 +26,7 @@ python -m saifen_pipeline ingest --year 2026
 
 # 3) update heatmap (modelo default = kde)
 npm run train
-# se skip por fingerprint ou artefato velho:
+# para reconstruir um inventário válido:
 npm run train:force
 ```
 
@@ -58,8 +58,8 @@ python -c "import json; print(json.load(open('shared/current_run.json'))['model'
 | `shared/heatmaps/` | JSON Leaflet.heat (interface app) |
 | `shared/current_run.json` | run publicado + fingerprint |
 | `pipeline/saifen_pipeline/cli.py` | subcommands `ingest` … `update` |
-| `web/src/data/HeatmapLoader.js` | consome `/shared/heatmaps` |
-| `mobile/src/services/heatmap.ts` | fallback estático + RPC |
+| `shared/web/heatmap-loader.js` | contrato de heatmap dos clientes React e HTML/JS |
+| `mobile/src/services/heatmap.ts` | RPC, JSON estático, cache de origem verificada e demonstração |
 
 ## Outros docs
 

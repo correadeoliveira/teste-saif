@@ -3,7 +3,7 @@
 | script | purpose |
 |--------|---------|
 | **`start.sh`** | **One command:** venv setup → pipeline → HTTP server → open browser |
-| `dev-web.sh [port]` | HTTP server only (default `:8000`) |
+| `dev-web.sh [port]` | Servidor estático do cliente HTML/JS (padrão `127.0.0.1:8000`) |
 | `run-pipeline.sh` | Python pipeline (`saifen-pipeline update`; `--force` rebuilds) |
 
 ```bash

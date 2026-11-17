@@ -1,83 +1,78 @@
-# Playbook: qualidade (testes + CI)
+# Playbook de qualidade
 
-> **Purpose:** o que um agente ou humano deve rodar para não regressar o SAIFEN.
-> **Cwd:** raiz do monorepo, exceto quando o comando diz `cd`.
+Rode os checks na raiz do monorepo, salvo quando indicado. As suites Python
+usam fixtures e validam os JSON versionados em `shared/`.
 
-Cross-refs: [AGENTS.md](../../AGENTS.md) · [heatmap-pipeline.md](heatmap-pipeline.md)
+## Web
 
-## Ordem sugerida num PR
-
-1. `mobile/` — typecheck, unit tests, lint, paridade IMU
-2. `pipeline/` — ruff + pytest (inclui contrato `shared/`)
-3. `supabase/` — contrato estático das RPCs (`python3 supabase/tests/check_sql.py`)
-4. `web/` — imports + contrato do heatmap + tidy (erros HTML)
-
-Não treinar KDE só para validar schema: os JSON em `shared/` já estão versionados.
-
-## Comandos locais
-
-### Mobile (`cd mobile`, Node ≥ 22.13)
+Use Node 22. O CI valida os clientes React/Vite e HTML/JS.
 
 ```bash
-npm run typecheck
-npm test                 # zone.ts, crimes.ts, profileStore.ts (sem Expo)
-npm run test:parity      # features/score vs fixture Python
-npm run lint             # eslint-config-expo
+npm ci
+node tools/check-web-imports.mjs
+npm test
+npm run build
+python -m pip install playwright==1.60.0
+python -m playwright install chromium
+python web/test/smoke.py
 ```
 
-Mocks de React Native ficam em `mobile/test/` (`register-cjs.cjs`). `zone-check.cjs` foi removido: as regras vivem em `src/services/zone.ts`.
+O teste em Chromium roda o preview Vite e o servidor do HTML/JS com respostas
+de rede simuladas. O [guia do Playwright](https://playwright.dev/python/docs/browsers)
+mostra como instalar dependências do navegador no Linux.
 
-### Pipeline heatmap (`cd pipeline`)
+## Mobile
+
+Em `mobile/`, com Node 22.13 ou superior:
 
 ```bash
-pip install -e ".[test,dev]"
+npm ci
+npm run typecheck
+npm test
+npm run test:parity
+npm run lint
+```
+
+A paridade compara a fixture sintética Python com as features e o score
+no TypeScript e verifica que o pacote Expo usa o modelo de `shared/`.
+
+## Pipelines
+
+```bash
+cd pipeline
+pip install -e ".[test]" ruff
 ruff check .
 ruff format --check .
-pytest -q --cov=saifen_pipeline --cov-fail-under=50
+pytest -q --cov=saifen_pipeline --cov-fail-under=70
 ```
 
-`ruff` ignora `pipeline/behavior/` (pacote irmão). Behavior:
+O teste de publicação roda o CLI com uma planilha pequena e valida
+repetição, reparo de arquivo ausente, remoção de fatias obsoletas e
+recuperação após falha. Rode os checks de IMU em `pipeline/behavior/`:
 
 ```bash
-cd pipeline/behavior
-pip install -e ".[test]"
+pip install -e ".[test]" ruff
+ruff check --select E,F .
 pytest -q
 ```
 
-### Web
+O runner IMU também regenera uma demonstração e publica métricas por sessão
+no resumo do GitHub Actions.
 
-O CI valida `web/index.html` (tidy, só exit ≥ 2), imports JS e `shared/heatmaps/heatmap_points.json` (`meta` + `points`). Local:
-
-```bash
-./tools/dev-web.sh
-python3 -c "import json; p=json.load(open('shared/heatmaps/heatmap_points.json')); assert p['meta'] and p['points']"
-```
-
-### Supabase RPCs
-
-Sem Docker. O CI e o check local leem o SQL versionado:
+## Supabase
 
 ```bash
 python3 supabase/tests/check_sql.py
 ```
 
-Isso confirma `device_required`, clamp `[50, 2000]` e limiares iguais a `zone.ts`.
-`supabase/tests/rpcs.sql` fica como script opcional para quando houver Postgres.
+O [CI SQL](../../.github/workflows/supabase-ci.yml) também executa as
+migrations, os checks de RPC e a verificação do limite por dispositivo com
+chamadas concorrentes em PostGIS temporário. As migrations de staging e
+produção rodam pelo workflow manual do repositório.
 
-## Workflows GitHub
+## Publicação e diagnóstico
 
-| Workflow | Quando | O que faz |
-|----------|--------|-----------|
-| `mobile-ci.yml` | push/PR em `mobile/**` | typecheck, `npm test`, parity, lint; `expo-doctor` não bloqueia |
-| `pipeline-ci.yml` | push/PR em `pipeline/**` e schemas `shared/` | ruff + pytest-cov + contrato JSON |
-| `pipeline.yml` | `main` + xlsx/schedule/`workflow_dispatch` | pytest **antes** do treino; commit de `shared/` só em `main` |
-| `behavior-ci.yml` | `pipeline/behavior/**` | pytest (+ ruff E,F) |
-| `web-ci.yml` | `web/**` | tidy (erros), imports, contrato heatmap |
-| `supabase-ci.yml` | `supabase/**` | contrato estático das RPCs (sem Docker) |
-| `supabase-migrate.yml` | manual | `db push` em staging/prod |
-
-## Contratos que não podem divergir
-
-- JSON: [`shared/schema/*.schema.json`](../../shared/schema) · [shared/README.md](../../shared/README.md)
-- Zona `low/medium/high/critical`: [`mobile/src/services/zone.ts`](../../mobile/src/services/zone.ts) e `zone_risk` na migration 006 (mesmos limiares; `check_sql.py` + `zone.test.ts`)
-- `report_crime`: `p_device_id` obrigatório (rate limit). `SECURITY DEFINER` + `GRANT anon` é MVP sem login — não tratar UUID do app como identidade.
+O [playbook de heatmap](heatmap-pipeline.md) descreve critérios de
+publicação, reprocessamento e recuperação. Os pipelines emitem eventos
+JSON com ID de execução, etapa, resultado e duração. Os clientes registram
+operações, fontes de dados e contagens agregadas no console local.
