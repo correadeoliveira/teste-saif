@@ -13,6 +13,8 @@ Qualidade (testes, ruff, CI, contrato `shared/`):
 
 → **[docs/agents/quality.md](docs/agents/quality.md)**
 
+A referência visual para mudanças na interface está em **[DESIGN.md](DESIGN.md)**.
+
 ## Comandos rápidos (raiz do repo)
 
 ```bash

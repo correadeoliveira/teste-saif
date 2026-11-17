@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T08:37:18Z",
+  "title": "Design System — SAIFEN",
+  "extensions": {
+    "breakpoints": [
+      { "name": "html-painel-estreito", "value": "900px" },
+      { "name": "html-gaveta-movel", "value": "768px" },
+      { "name": "html-boot-compacto", "value": "480px" }
+    ],
+    "motion": [
+      {
+        "name": "html-gaveta",
+        "value": "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Entrada e saída da gaveta inferior em telas estreitas."
+      }
+    ],
+    "shadows": [
+      {
+        "name": "html-fosforo",
+        "value": "0 0 6px rgba(0, 255, 159, 0.4), 0 0 14px rgba(0, 255, 159, 0.1)",
+        "purpose": "Brilho verde dos controles e indicadores CRT no HTML/JS."
+      },
+      {
+        "name": "react-legenda",
+        "value": "0 0 16px rgba(0, 0, 0, 0.6)",
+        "purpose": "Separa a legenda translúcida das ruas do mapa-base."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Aba ativa do mapa",
+      "kind": "nav",
+      "refersTo": "react-active-tab",
+      "description": "Borda e brilho âmbar assinalam a aba selecionada no React.",
+      "html": "<button class=\"ds-react-tab\" type=\"button\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 10c0 5-8 11-8 11s-8-6-8-11a8 8 0 0 1 16 0Z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg><span>MAPA</span></button>",
+      "css": ".ds-react-tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 120px; height: 40px; border: 1px solid #ffcb00; border-radius: 2px; background: transparent; color: #ffcb00; font: 9px 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-shadow: 0 0 6px rgba(255,203,0,0.6); box-shadow: 0 0 8px rgba(255,203,0,0.6), inset 0 0 10px rgba(255,203,0,0.12); } .ds-react-tab svg { filter: drop-shadow(0 0 4px #ffcb00); }"
+    },
+    {
+      "name": "Chip de filtro ativo",
+      "kind": "chip",
+      "description": "Losango cheio e preenchimento âmbar sinalizam a seleção.",
+      "html": "<button class=\"ds-react-chip\" type=\"button\" aria-pressed=\"true\">◆ furto</button>",
+      "css": ".ds-react-chip { padding: 2px 8px; border: 1px solid #ffcb00; background: #ffcb0018; color: #ffcb00; box-shadow: 0 0 6px #ffcb0040; font: 12px 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; transition: all 150ms; }"
+    },
+    {
+      "name": "Botão CRT",
+      "kind": "button",
+      "refersTo": "mobile-crt-button",
+      "description": "Ação primária nas telas nativas de sensores.",
+      "html": "<button class=\"ds-mobile-button\" type=\"button\">COLETAR SESSÃO</button>",
+      "css": ".ds-mobile-button { padding: 12px 14px; border: 1px solid #00FF9F; background: transparent; color: #00FF9F; font: 13px monospace; letter-spacing: 1.5px; } .ds-mobile-button:active:not(:disabled) { background: rgba(0,255,159,0.12); } .ds-mobile-button:disabled { opacity: 0.35; }"
+    },
+    {
+      "name": "Botão CRT para ação crítica",
+      "kind": "button",
+      "refersTo": "mobile-crt-button-danger",
+      "description": "Borda e rótulo vermelhos no estado de ação crítica.",
+      "html": "<button class=\"ds-mobile-danger\" type=\"button\">ENVIAR BO</button>",
+      "css": ".ds-mobile-danger { padding: 12px 14px; border: 1px solid #FF5454; background: transparent; color: #FF5454; font: 13px monospace; letter-spacing: 1.5px; } .ds-mobile-danger:active:not(:disabled) { background: rgba(0,255,159,0.12); } .ds-mobile-danger:disabled { opacity: 0.35; }"
+    },
+    {
+      "name": "HUD de sensores",
+      "kind": "card",
+      "description": "Título compacto e linhas de estado na moldura CRT nativa.",
+      "html": "<div class=\"ds-mobile-hud\"><div class=\"ds-mobile-hud-title\">RUNTIME</div><div>target_hz: 50</div><div>window_ms: 2000</div></div>",
+      "css": ".ds-mobile-hud { display: grid; gap: 4px; padding: 12px; border: 1px solid rgba(0,255,159,0.35); background: rgba(0,0,0,0.7); color: #E6FFE6; font: 11px monospace; } .ds-mobile-hud-title { margin-bottom: 4px; color: #00FF9F; font-size: 12px; letter-spacing: 2px; }"
+    }
+  ]
+}
