@@ -49,3 +49,36 @@ def test_evaluate_baseline_runs():
     assert "spearman" in metrics["test"]
     assert "precision_at_10pct" in metrics["test"]
     assert "mae" in metrics["test"]
+
+
+def test_fallback_split_keeps_each_date_in_one_fold():
+    frame = _monthly_points().iloc[:6].copy()
+    frame["occurred_at"] = pd.to_datetime(
+        ["2026-01-01", "2026-01-01", "2026-01-02", "2026-01-02", "2026-01-03", "2026-01-03"]
+    )
+    split = temporal_split(frame)
+    assert [len(split[name]) for name in ("train", "validation", "test")] == [2, 2, 2]
+
+
+def test_compare_evaluates_fixed_grid_and_keeps_holdout_out_of_selection():
+    from saifen_pipeline.evaluate import compare_models
+
+    frame = _monthly_points()
+    frame["lng"] = frame["lng"] + np.array([i % 3 for i in range(len(frame))]) * 0.0001
+    split = temporal_split(frame)
+    first = compare_models(split, sample_max=50)
+    split["test"] = split["test"].assign(lat=-23.50, lng=-46.60)
+    second = compare_models(split, sample_max=50)
+    assert first["selected_kde"] == second["selected_kde"]
+    assert first["validation"] == second["validation"]
+    assert first["holdout"]["baseline"]["n_cells"] > 4_000
+
+
+def test_fixed_metric_kernel_reaches_expected_weight_one_bandwidth_away():
+    from saifen_pipeline.kde import FittedKDE
+
+    origin = -23.55
+    longitudes = np.full(3, -46.63)
+    fitted = FittedKDE(np.full(3, origin), longitudes, "scott", 500, 3, 42)
+    targets = np.array([origin, origin + 500 / 111_320])
+    assert np.allclose(fitted.score(targets, np.full(2, -46.63)), [1, np.exp(-0.5)])

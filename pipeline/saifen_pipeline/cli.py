@@ -6,14 +6,20 @@ import argparse
 import json
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import TYPE_CHECKING
 
 from saifen_pipeline import cleaner, config, exporter, ingest, loader, publish
-from saifen_pipeline.evaluate import evaluate_split, temporal_split
+from saifen_pipeline.evaluate import compare_models, evaluate_split, temporal_split
 from saifen_pipeline.heatmap import generate_artifacts
-from saifen_pipeline.log import log_event
+from saifen_pipeline.log import execution, log_event, stage
 from saifen_pipeline.models import get_model
 from saifen_pipeline.spatial import aggregate_counts, features_frame
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def _parse_bandwidth(value: str):
@@ -45,11 +51,12 @@ def ingest_cmd(args: argparse.Namespace) -> int:
     return 0
 
 
-def preprocess_cmd(args: argparse.Namespace) -> int:
-    profile = ingest.ingest(year=args.year, strict=True)
+def _preprocess(args: argparse.Namespace, profile: dict, summary_path: Path) -> pd.DataFrame:
     source = Path(profile["path"])
     log_event("preprocess.load", file=source.name)
     df_raw = loader.load_ssp_xlsx(source)
+    if ingest.sha256_file(source) != profile["sha256"]:
+        raise ValueError("A planilha mudou durante o processamento. Reexecute com a fonte estável.")
     df_raw["_source_file"] = source.name
     bbox = None if getattr(args, "no_bbox", False) else config.SP_BBOX
     df = cleaner.clean(
@@ -69,23 +76,30 @@ def preprocess_cmd(args: argparse.Namespace) -> int:
     )
     parquet = exporter.write_processed_parquet(df)
     summary = cleaner.summarize(df)
-    summary_path = exporter.write_summary(summary)
+    exporter.write_summary(summary, summary_path)
     grid = aggregate_counts(df)
     feats = features_frame(grid)
     feat_path = config.FEATURES_DIR / "crime_aggregate.parquet"
     feat_path.parent.mkdir(parents=True, exist_ok=True)
-    if len(feats):
-        feats.to_parquet(feat_path, index=False)
+    feats.to_parquet(feat_path, index=False)
     log_event(
         "preprocess.ok",
         parquet=str(parquet.relative_to(config.ROOT_DIR)),
-        summary=str(summary_path.relative_to(config.ROOT_DIR)),
+        summary=summary_path.name,
         n_feature_cells=int(len(feats)),
     )
+    return df
+
+
+def preprocess_cmd(args: argparse.Namespace) -> int:
+    with stage("ingest"):
+        profile = ingest.ingest(year=args.year, strict=True)
+    with stage("preprocess"):
+        _preprocess(args, profile, config.PROCESSED_DIR / "summary.json")
     return 0
 
 
-def _load_clean() -> pd.DataFrame:  # noqa: F821
+def _load_clean() -> pd.DataFrame:
     import pandas as pd
 
     parquet = config.PROCESSED_DIR / "celulares_clean.parquet"
@@ -124,13 +138,19 @@ def train_cmd(args: argparse.Namespace) -> int:
 
 
 def evaluate_cmd(args: argparse.Namespace) -> int:
-    df = _load_clean()
-    split = temporal_split(df, year=args.year)
-    model = _build_model(args)
-    model.fit(split["train"])
-    metrics = evaluate_split(model, split)
-    log_event("evaluate.ok", model=model.name, metrics=metrics.get("test"))
-    print(json.dumps(metrics, ensure_ascii=False, indent=2, default=str))
+    with stage("evaluate"):
+        split = temporal_split(_load_clean(), year=args.year)
+        if args.compare:
+            metrics = compare_models(split, args.sample_max)
+            log_event(
+                "evaluate.compare", selected=metrics["selected_kde"], omitted=metrics["omitted"]
+            )
+        else:
+            model = _build_model(args)
+            model.fit(split["train"])
+            metrics = evaluate_split(model, split)
+            log_event("evaluate.ok", model=model.name, metrics=metrics["test"])
+    print(json.dumps(metrics, ensure_ascii=False, indent=2, allow_nan=False))
     return 0
 
 
@@ -147,91 +167,109 @@ def heatmap_cmd(args: argparse.Namespace) -> int:
         sample_max=args.sample_max,
         write_grid=not getattr(args, "no_grid", False),
         write_crimes=not getattr(args, "no_crimes", False),
+        output_dir=config.PROCESSED_DIR / "heatmaps",
     )
     return 0
 
 
 def publish_cmd(args: argparse.Namespace) -> int:
-    if not config.CURRENT_RUN_PATH.exists() and not config.RUNS_DIR.exists():
-        log_event("publish.skip", reason="nenhum run gerado — rode update")
-        return 1
-    # republish último run se existir
-    runs = sorted(config.RUNS_DIR.glob("*"))
-    if not runs:
-        return 1
-    latest = runs[-1]
-    meta_path = latest / "metadata.json"
-    metadata = (
-        json.loads(meta_path.read_text(encoding="utf-8"))
-        if meta_path.exists()
-        else {"run_id": latest.name}
-    )
-    publish.publish(latest, metadata)
+    with publish.publication_lock(), stage("publish"):
+        runs = sorted(
+            path
+            for path in config.RUNS_DIR.iterdir()
+            if not path.name.startswith(".") and (path / "metadata.json").is_file()
+        )
+        if not runs:
+            raise FileNotFoundError("Nenhum run preparado. Rode update.")
+        publish.publish(runs[-1])
     return 0
 
 
 def update_cmd(args: argparse.Namespace) -> int:
-    t0 = time.time()
-    profile = ingest.ingest(year=args.year, strict=True)
+    started = time.monotonic()
+    with publish.publication_lock():
+        return _update_locked(args, started)
+
+
+def _update_locked(args: argparse.Namespace, started: float) -> int:
+    with stage("ingest"):
+        profile = ingest.ingest(year=args.year, strict=True)
     model = _build_model(args)
-    fp = publish.fingerprint(profile["sha256"], args.model, model.params())
+    params = {
+        "model": model.params(),
+        "source_file": profile["file"],
+        "source_year": args.year,
+        "source_product": profile["product"],
+        "bbox": None if args.no_bbox else config.SP_BBOX,
+        "keep_dup_bo": args.keep_dup_bo,
+        "per_type": not args.no_per_type,
+        "per_period": not args.no_per_period,
+        "min_density": args.min_density,
+        "sample_max": args.sample_max,
+    }
+    if not 0 <= args.min_density <= 1 or args.sample_max < 1:
+        raise ValueError("min_density deve estar em [0, 1] e sample_max deve ser positivo.")
+    fp = publish.fingerprint(profile["sha256"], args.model, params)
     if not args.force and publish.current_fingerprint() == fp:
-        log_event("update.skip", fingerprint=fp, reason="fonte e params inalterados")
+        log_event("update.skip", fingerprint=fp, reason="current_inventory_matches")
         return 0
 
-    preprocess_cmd(args)
-    df = _load_clean()
-    split_metrics = None
-    try:
-        split = temporal_split(df, year=args.year)
-        eval_model = _build_model(args)
-        eval_model.fit(split["train"])
-        split_metrics = evaluate_split(eval_model, split)
-        log_event("evaluate.ok", metrics=split_metrics.get("test"))
-    except (ValueError, NotImplementedError) as exc:
-        log_event("evaluate.skip", reason=str(exc))
-
-    model.fit(df)
-    generate_artifacts(
-        df,
-        model,
-        per_type=not getattr(args, "no_per_type", False),
-        per_period=not getattr(args, "no_per_period", False),
-        min_density=getattr(args, "min_density", config.KDE_MIN_DENSITY),
-        sample_max=args.sample_max,
-    )
-
     run_id = publish.new_run_id(fp)
-    metadata = {
-        "run_id": run_id,
-        "fingerprint": fp,
-        "model": model.name,
-        "model_version": model.version,
-        "params": model.params(),
-        "source_file": profile["file"],
-        "source_sha256": profile["sha256"],
-        "product": profile["product"],
-        "n_rows_raw": profile["n_rows"],
-        "n_rows_clean": len(df),
-        "drop_reasons": df.attrs.get("drop_reasons", {}),
-        "geo": profile.get("geo"),
-        "source_year": args.year,
-        "pipeline_version": config.PIPELINE_VERSION,
-        "generated_at": __import__("datetime")
-        .datetime.now(__import__("datetime").timezone.utc)
-        .isoformat(timespec="seconds"),
-        "duration_s": round(time.time() - t0, 2),
-        "disclaimer": config.DISCLAIMER,
-        "source_url": "https://www.ssp.sp.gov.br/estatistica/consultas",
-    }
-    run_dir = publish.write_run(run_id, metadata, metrics=split_metrics)
-    publish.publish(run_dir, metadata)
-    log_event(
-        "update.ok",
-        run_id=run_id,
-        duration_s=metadata["duration_s"],
-        artifact=str(config.HEATMAP_DIR.relative_to(config.ROOT_DIR)),
-    )
+    log_event("update.start", run_id=run_id, fingerprint=fp, model=model.name)
+    with TemporaryDirectory(dir=config.RUNS_DIR, prefix=".stage-") as directory:
+        output = Path(directory)
+        with stage("preprocess"):
+            df = _preprocess(args, profile, output / "summary.json")
+        with stage("evaluate"):
+            split_metrics = None
+            try:
+                split = temporal_split(df, year=args.year)
+                eval_model = _build_model(args)
+                eval_model.fit(split["train"])
+                split_metrics = evaluate_split(eval_model, split)
+                log_event("evaluate.ok", run_id=run_id, metrics=split_metrics["test"])
+            except ValueError:
+                log_event("evaluate.skip", run_id=run_id, reason="insufficient_evaluation_data")
+
+        with stage("fit"):
+            model.fit(df)
+        with stage("export"):
+            generate_artifacts(
+                df,
+                model,
+                per_type=params["per_type"],
+                per_period=params["per_period"],
+                min_density=args.min_density,
+                sample_max=args.sample_max,
+                output_dir=output / "heatmaps",
+            )
+
+        metadata = {
+            "run_id": run_id,
+            "fingerprint": fp,
+            "model": model.name,
+            "model_version": model.version,
+            "params": params,
+            "source_file": profile["file"],
+            "source_sha256": profile["sha256"],
+            "product": profile["product"],
+            "n_rows_raw": profile["n_rows"],
+            "n_rows_clean": len(df),
+            "drop_reasons": df.attrs.get("drop_reasons", {}),
+            "geo": profile.get("geo"),
+            "source_year": args.year,
+            "pipeline_version": config.PIPELINE_VERSION,
+            "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "duration_s": round(time.monotonic() - started, 2),
+            "disclaimer": config.DISCLAIMER,
+            "source_url": "https://www.ssp.sp.gov.br/estatistica/consultas",
+        }
+        with stage("validate"):
+            run = publish.seal_run(output, metadata, split_metrics)
+        with stage("publish"):
+            publish.publish(run)
+
+    log_event("update.ok", run_id=run_id, duration_s=round(time.monotonic() - started, 2))
     return 0
 
 
@@ -256,8 +294,13 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p_eval = sub.add_parser("evaluate", help="Split temporal intra-2026 + métricas.")
     _add_common(p_eval)
+    p_eval.add_argument(
+        "--compare", action="store_true", help="Compara KDE e contagem em grade fixa."
+    )
 
-    p_heat = sub.add_parser("heatmap", help="Gera artefatos em shared/heatmaps.")
+    p_heat = sub.add_parser(
+        "heatmap", help="Gera artefatos de diagnóstico em data/processed/heatmaps."
+    )
     _add_common(p_heat)
     p_heat.add_argument("--no-per-type", action="store_true")
     p_heat.add_argument("--no-per-period", action="store_true")
@@ -299,13 +342,14 @@ def main(argv: list[str] | None = None) -> int:
     if not args.cmd:
         args = parser.parse_args(["update"])
     try:
-        return COMMANDS[args.cmd](args)
+        with execution():
+            return COMMANDS[args.cmd](args)
     except NotImplementedError as exc:
-        log_event("error", cmd=args.cmd, error=str(exc))
+        log_event("error", cmd=args.cmd, error_type=type(exc).__name__)
         print(exc, file=sys.stderr)
         return 2
-    except (FileNotFoundError, ValueError) as exc:
-        log_event("error", cmd=args.cmd, error=str(exc))
+    except (OSError, ValueError) as exc:
+        log_event("error", cmd=args.cmd, error_type=type(exc).__name__)
         print(exc, file=sys.stderr)
         return 1
 

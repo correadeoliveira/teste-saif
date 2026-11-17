@@ -8,4 +8,4 @@ consumíveis pelo frontend. Treino é só via CLI; o app não treina.
 from saifen_pipeline import cleaner, config, exporter, kde, loader
 
 __all__ = ["config", "loader", "cleaner", "kde", "exporter"]
-__version__ = "0.2.0"
+__version__ = config.PIPELINE_VERSION

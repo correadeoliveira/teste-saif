@@ -26,6 +26,8 @@ dist/
 data/processed/*.parquet
 data/processed/*.feather
 data/processed/*.cache
+data/processed/summary.json
+data/processed/heatmaps/
 data/features/*.parquet
 data/raw/manifest.json
 

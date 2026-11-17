@@ -1,4 +1,4 @@
-"""Validação temporal intra-anual (sem leakage)."""
+"""Avaliação temporal de hotspots em uma grade fixa de São Paulo."""
 
 from __future__ import annotations
 
@@ -12,133 +12,126 @@ from saifen_pipeline import config, spatial
 from saifen_pipeline.models.base import SpatialModel
 
 
-def temporal_split(
-    df: pd.DataFrame,
-    year: int = config.SOURCE_YEAR,
-) -> dict[str, pd.DataFrame]:
-    """
-    Split por mês dentro do ano-fonte.
+class InsufficientEvaluation(ValueError):
+    """Não há observações suficientes no recorte de avaliação."""
 
-    Train: todos os meses menos os dois últimos
-    Validation: penúltimo mês
-    Test: último mês
 
-    Se houver menos de 3 meses, cai para corte 60/20/20 ordenado no tempo.
-    """
-    d = df.dropna(subset=["occurred_at"]).copy()
-    d = d.loc[d["occurred_at"].dt.year == year]
-    if d.empty:
-        raise ValueError(f"Nenhuma linha com occurred_at em {year}.")
-    d = d.sort_values("occurred_at")
-    months = sorted(d["occurred_at"].dt.month.unique().tolist())
-    if len(months) >= 3:
-        test_m = months[-1]
-        val_m = months[-2]
-        train_m = set(months[:-2])
-        train = d.loc[d["occurred_at"].dt.month.isin(train_m)]
-        val = d.loc[d["occurred_at"].dt.month == val_m]
-        test = d.loc[d["occurred_at"].dt.month == test_m]
+def temporal_split(df: pd.DataFrame, year: int = config.SOURCE_YEAR) -> dict[str, pd.DataFrame]:
+    data = df.dropna(subset=["occurred_at"])
+    data = data.loc[data["occurred_at"].dt.year == year].sort_values("occurred_at")
+    groups = data["occurred_at"].dt.month
+    values = groups.unique()
+    if len(values) >= 3:
+        train_end, validation_end = values[-3:-1]
     else:
-        n = len(d)
-        i_train = max(int(n * 0.6), 1)
-        i_val = max(int(n * 0.8), i_train + 1)
-        train, val, test = d.iloc[:i_train], d.iloc[i_train:i_val], d.iloc[i_val:]
-    if train.empty or test.empty:
-        raise ValueError("Split temporal resultou em train ou test vazio.")
-    return {"train": train, "validation": val, "test": test}
+        groups = data["occurred_at"].dt.normalize()
+        values = groups.unique()
+        n = len(values)
+        if n < 3:
+            raise InsufficientEvaluation("A avaliação requer pelo menos três datas distintas.")
+        train_size = min(max(int(n * 0.6), 1), n - 2)
+        validation_size = min(max(int(n * 0.8), train_size + 1), n - 1)
+        train_end, validation_end = values[[train_size - 1, validation_size - 1]]
+    return {
+        "train": data.loc[groups <= train_end],
+        "validation": data.loc[(groups > train_end) & (groups <= validation_end)],
+        "test": data.loc[groups > validation_end],
+    }
 
 
-def _cell_vector(df: pd.DataFrame, cell_ids: list[str]) -> np.ndarray:
-    counts = df["cell_id"].value_counts().to_dict() if not df.empty else {}
-    return np.array([float(counts.get(cid, 0.0)) for cid in cell_ids], dtype=np.float64)
-
-
-def _scores_from_model(
-    model: SpatialModel,
-    cell_ids: list[str],
-    centroids: dict[str, tuple[float, float]],
-) -> np.ndarray:
-    grid = model.predict_grid()
-    # mapa (i,j) -> density via cell_id format
-    lookup: dict[str, float] = {}
-    for i, _lat in enumerate(grid.yi):
-        for j, _lng in enumerate(grid.xi):
-            lookup[f"{i}:{j}"] = float(grid.zi[i, j])
-    # Se a grade do modelo não coincidir com a de avaliação (KDE 200x200 vs grid ~H3),
-    # amostrar a densidade no centróide mais próximo da grade do modelo.
-    if not any(cid in lookup for cid in cell_ids[: min(20, len(cell_ids))]):
-        scores = []
-        xi, yi, zi = grid.xi, grid.yi, grid.zi
-        for cid in cell_ids:
-            lat, lng = centroids[cid]
-            j = int(np.argmin(np.abs(xi - lng)))
-            i = int(np.argmin(np.abs(yi - lat)))
-            scores.append(float(zi[i, j]))
-        return np.array(scores, dtype=np.float64)
-    return np.array([lookup.get(cid, 0.0) for cid in cell_ids], dtype=np.float64)
+def _top(scores: np.ndarray, frac: float) -> np.ndarray:
+    return np.argsort(-scores, kind="stable")[: max(1, round(len(scores) * frac))]
 
 
 def precision_at_fraction(y_true: np.ndarray, y_pred: np.ndarray, frac: float = 0.10) -> float:
-    n = len(y_true)
-    if n == 0:
-        return float("nan")
-    k = max(1, int(round(n * frac)))
-    pred_top = np.argsort(y_pred)[::-1][:k]
-    true_top = set(np.argsort(y_true)[::-1][:k].tolist())
-    hits = sum(1 for i in pred_top if int(i) in true_top)
-    return hits / k
+    pred = _top(y_pred, frac)
+    return float(len(set(pred) & set(_top(y_true, frac))) / len(pred)) if len(pred) else 0.0
+
+
+def _in_bounds(df: pd.DataFrame, bbox: tuple[float, float, float, float]) -> pd.DataFrame:
+    min_lng, min_lat, max_lng, max_lat = bbox
+    return df.loc[df["lat"].between(min_lat, max_lat) & df["lng"].between(min_lng, max_lng)]
+
+
+def _calendar_days(df: pd.DataFrame) -> int:
+    days = df["occurred_at"].dt.normalize()
+    return (days.max() - days.min()).days + 1
 
 
 def evaluate_split(
     model: SpatialModel,
     split: dict[str, pd.DataFrame],
     bbox: tuple[float, float, float, float] = config.SP_BBOX,
+    *,
+    include_test: bool = True,
 ) -> dict[str, Any]:
-    """Avalia ranking de hotspots no período seguinte (células de grade)."""
-    frames = {k: spatial.assign_cells(v, bbox=bbox) for k, v in split.items() if len(v)}
-    union = pd.concat(frames.values(), ignore_index=True)
-    cell_ids = sorted(union["cell_id"].unique().tolist())
-    centroids = {
-        cid: (
-            float(union.loc[union["cell_id"] == cid, "lat"].mean()),
-            float(union.loc[union["cell_id"] == cid, "lng"].mean()),
-        )
-        for cid in cell_ids
-    }
-    y_test = _cell_vector(frames["test"], cell_ids)
-    y_val = _cell_vector(frames.get("validation", frames["test"].iloc[0:0]), cell_ids)
-    y_pred = _scores_from_model(model, cell_ids, centroids)
+    frames = {name: _in_bounds(frame, bbox) for name, frame in split.items()}
+    required = ("train", "validation", "test") if include_test else ("train", "validation")
+    if any(frames[name].empty for name in required):
+        raise InsufficientEvaluation("Período sem dados na grade de avaliação.")
 
-    def _pack(y: np.ndarray) -> dict[str, float]:
-        if y.sum() == 0 or np.allclose(y_pred, y_pred[0]):
-            spear = float("nan")
-        else:
-            spear = float(spearmanr(y_pred, y).correlation)
-        scale = y.sum() / y_pred.sum() if y_pred.sum() > 0 else 0.0
-        yhat = y_pred * scale
-        mae = float(np.mean(np.abs(yhat - y)))
-        rmse = float(np.sqrt(np.mean((yhat - y) ** 2)))
+    grids = {name: spatial.aggregate_counts(frames[name], bbox=bbox) for name in required}
+    train_grid = grids["train"]
+    xx, yy = np.meshgrid(train_grid.xi, train_grid.yi)
+    scores = model.score_centroids(yy.ravel(), xx.ravel())
+    total_scores = scores.sum()
+    distribution = scores / total_scores if total_scores > 0 else np.zeros_like(scores)
+    daily_rate = len(frames["train"]) / _calendar_days(split["train"])
+
+    def pack(name: str) -> dict[str, float | None]:
+        counts = grids[name].counts.ravel()
+        estimated = distribution * daily_rate * _calendar_days(split[name])
+        error = estimated - counts
+        rank = None
+        if np.ptp(scores) and np.ptp(counts):
+            rank = float(spearmanr(scores, counts).correlation)
         return {
-            "spearman": spear,
-            "precision_at_10pct": precision_at_fraction(y, y_pred, 0.10),
-            "mae": mae,
-            "rmse": rmse,
+            "spearman": rank,
+            "precision_at_10pct": precision_at_fraction(counts, scores),
+            "hit_rate_at_10pct": float(counts[_top(scores, 0.10)].sum() / counts.sum()),
+            "mae": float(np.mean(np.abs(error))),
+            "rmse": float(np.sqrt(np.mean(error**2))),
         }
 
+    result = {"n_cells": len(scores)}
+    for name in required:
+        result[name + "_months"] = sorted(frames[name]["occurred_at"].dt.month.unique().tolist())
+        result["n_" + name] = len(frames[name])
+    result["validation"] = pack("validation")
+    if include_test:
+        result["test"] = pack("test")
+    return result
+
+
+def compare_models(split: dict[str, pd.DataFrame], sample_max: int) -> dict[str, Any]:
+    from saifen_pipeline.models import get_model
+
+    models = {
+        "baseline": get_model("baseline"),
+        "scott": get_model("kde", sample_max=sample_max),
+        **{
+            f"{m}m": get_model("kde", bandwidth_m=m, sample_max=sample_max)
+            for m in (250, 500, 1000)
+        },
+    }
+    validation = {}
+    omitted = []
+    for name, model in models.items():
+        try:
+            model.fit(split["train"])
+        except ValueError:
+            if name == "scott":
+                omitted.append(name)
+                continue
+            raise
+        validation[name] = evaluate_split(model, split, include_test=False)["validation"]
+
+    candidates = [name for name in validation if name != "baseline"]
+    selected = max(candidates, key=lambda name: validation[name]["hit_rate_at_10pct"])
+    held_out = dict.fromkeys(name for name in ("baseline", selected, "scott") if name in validation)
     return {
-        "n_cells": len(cell_ids),
-        "n_train": int(len(split["train"])),
-        "n_validation": int(len(split.get("validation", []))),
-        "n_test": int(len(split["test"])),
-        "train_months": sorted(split["train"]["occurred_at"].dt.month.unique().tolist()),
-        "validation_months": sorted(split["validation"]["occurred_at"].dt.month.unique().tolist())
-        if len(split.get("validation", []))
-        else [],
-        "test_months": sorted(split["test"]["occurred_at"].dt.month.unique().tolist()),
-        "test": _pack(y_test),
-        "validation": _pack(y_val) if y_val.sum() > 0 else {},
-        "note": (
-            "Split intra-anual: o modelo é treinado em meses anteriores e avaliado "
-            "no último mês disponível de 2026. Não é holdout 2022–2025."
-        ),
+        "selected_kde": selected,
+        "omitted": omitted,
+        "validation": validation,
+        "holdout": {name: evaluate_split(models[name], split) for name in held_out},
     }

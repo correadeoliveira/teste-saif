@@ -3,7 +3,7 @@
 # SAIFEN — run-pipeline.sh
 #
 # Atalho: ativa venv e dispara o pipeline Python ponta-a-ponta.
-# Repassa argumentos para `run_pipeline.py` (ex: --force).
+# Repassa argumentos para o subcomando update (ex: --force).
 # ───────────────────────────────────────────────────
 set -euo pipefail
 
@@ -13,8 +13,9 @@ cd "$ROOT"
 if [[ ! -d ".venv" ]]; then
     echo "==> criando venv em .venv/"
     python3 -m venv .venv
-    .venv/bin/pip install --upgrade pip
-    .venv/bin/pip install -r pipeline/requirements.txt
+fi
+if ! .venv/bin/python -c 'import openpyxl, pandas, pyarrow, scipy, jsonschema' 2>/dev/null; then
+    .venv/bin/python -m pip install -e pipeline
 fi
 
 # shellcheck disable=SC1091

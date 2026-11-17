@@ -15,6 +15,10 @@
     "generated_at": { "type": "string", "minLength": 1 },
     "disclaimer": { "type": "string", "minLength": 1 },
     "heatmaps": { "type": "string" },
-    "run_dir": { "type": "string" }
+    "run_dir": { "type": "string" },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+    }
   }
 }

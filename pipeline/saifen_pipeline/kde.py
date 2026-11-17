@@ -13,7 +13,7 @@ Implementa duas estratégias de saída, ambas usadas pelo frontend:
        camadas Mapbox GL JS / heatmap analítico (PostGIS).
 
 A escolha do bandwidth segue a regra de Scott por padrão; aceita
-'silverman' ou um float manual (em graus, espaço lat/lng).
+'silverman', um fator de covariância ou largura fixa em metros.
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
+from scipy.spatial.distance import cdist
 from scipy.stats import gaussian_kde
 
 from saifen_pipeline import config
@@ -46,16 +47,101 @@ class KDEGrid:
         return (dx, dy)
 
 
-def _build_kde(
-    lats: np.ndarray,
-    lngs: np.ndarray,
-    bandwidth: Literal["scott", "silverman"] | float = config.KDE_BANDWIDTH,
-) -> gaussian_kde:
-    """Constrói KDE 2D (input em [lng, lat] para alinhar com xy convencional)."""
-    if lats.size < 3:
-        raise ValueError(f"KDE precisa de ao menos 3 pontos; recebido: {lats.size}.")
-    xy = np.vstack([lngs, lats])
-    return gaussian_kde(xy, bw_method=bandwidth)
+def normalize_density(density: np.ndarray) -> np.ndarray:
+    peak = density.max()
+    return density / peak if peak > 0 else np.zeros_like(density)
+
+
+class FittedKDE:
+    """Reuses the same training sample for point, grid, and evaluation scores."""
+
+    def __init__(
+        self,
+        lats: np.ndarray,
+        lngs: np.ndarray,
+        bandwidth: Literal["scott", "silverman"] | float,
+        bandwidth_m: float | None,
+        sample_max: int | None,
+        seed: int,
+    ) -> None:
+        if len(lats) < 3:
+            raise ValueError("KDE precisa de ao menos 3 pontos.")
+        if sample_max is not None and sample_max < 3:
+            raise ValueError("sample_max do KDE deve ser pelo menos 3.")
+        self.n_points = len(lats)
+        self.seed = seed
+        self.bandwidth_m = bandwidth_m
+        if sample_max is not None and self.n_points > sample_max:
+            idx = np.random.default_rng(seed).choice(self.n_points, size=sample_max, replace=False)
+            lats, lngs = lats[idx], lngs[idx]
+        self.points = np.column_stack((lngs, lats))
+        if not np.isfinite(self.points).all():
+            raise ValueError("KDE requer coordenadas finitas.")
+        self.kde = None
+        if bandwidth_m is not None:
+            if not np.isfinite(bandwidth_m) or bandwidth_m <= 0:
+                raise ValueError("Bandwidth em metros deve ser positivo e finito.")
+            self.metric_points = self._to_meters(self.points)
+            self.factor = bandwidth_m
+        else:
+            if not isinstance(bandwidth, str) and (not np.isfinite(bandwidth) or bandwidth <= 0):
+                raise ValueError("Bandwidth KDE deve ser um fator positivo e finito.")
+            try:
+                self.kde = gaussian_kde(self.points.T, bw_method=bandwidth)
+            except np.linalg.LinAlgError as exc:
+                raise ValueError("Amostra KDE colinear ou com variância insuficiente.") from exc
+            self.factor = float(self.kde.factor)
+
+    @staticmethod
+    def _to_meters(points: np.ndarray) -> np.ndarray:
+        lat, lng = config.SP_CENTER
+        scale = np.array([111_320.0 * np.cos(np.deg2rad(lat)), 111_320.0])
+        return (points - [lng, lat]) * scale
+
+    def score(self, lats: np.ndarray, lngs: np.ndarray) -> np.ndarray:
+        points = np.column_stack((lngs, lats))
+        if self.kde is not None:
+            return self.kde(points.T)
+
+        # The constant kernel denominator cancels when scores are normalized.
+        metric_points = self._to_meters(points)
+        scores = np.empty(len(points))
+        for start in range(0, len(points), 256):
+            rows = slice(start, start + 256)
+            distances = cdist(metric_points[rows], self.metric_points, metric="sqeuclidean")
+            distances *= -0.5 / self.factor**2
+            np.exp(distances, out=distances)
+            scores[rows] = distances.mean(axis=1)
+        return scores
+
+    def point_heatmap(self, sample_max: int | None) -> list[list[float]]:
+        points = self.points
+        if sample_max is not None and len(points) > sample_max:
+            idx = np.random.default_rng(self.seed).choice(
+                len(points), size=sample_max, replace=False
+            )
+            points = points[idx]
+        if not len(points):
+            return []
+        lngs, lats = points.T
+        weights = normalize_density(self.score(lats, lngs))
+        return np.column_stack((lats, lngs, weights)).tolist()
+
+    def grid_density(self, bbox: tuple[float, float, float, float], grid_size: int) -> KDEGrid:
+        if grid_size < 2:
+            raise ValueError("grid_size deve ser pelo menos 2.")
+        xi = np.linspace(bbox[0], bbox[2], grid_size)
+        yi = np.linspace(bbox[1], bbox[3], grid_size)
+        xx, yy = np.meshgrid(xi, yi)
+        scores = self.score(yy.ravel(), xx.ravel()).reshape(yy.shape)
+        return KDEGrid(
+            xi=xi,
+            yi=yi,
+            zi=normalize_density(scores).astype(np.float32),
+            bbox=bbox,
+            bandwidth=self.factor,
+            n_points=self.n_points,
+        )
 
 
 def point_heatmap(
@@ -66,43 +152,13 @@ def point_heatmap(
     sample_max: int | None = 5000,
     seed: int = 42,
 ) -> list[list[float]]:
-    """
-    Avalia KDE nos próprios pontos e devolve [[lat, lng, weight], ...].
-
-    Parameters
-    ----------
-    df : pd.DataFrame com colunas lat/lng (limpas).
-    sample_max : int | None
-        Se o dataset for grande, faz amostragem estratificada antes de
-        construir o KDE para evitar custo O(n²). None => sem amostragem.
-        5000 já é mais que suficiente para um heatmap visualmente fiel
-        em escala de bairro.
-
-    Returns
-    -------
-    list[list[float]]
-        Compatível com Leaflet.heat: cada elemento é [lat, lng, weight].
-    """
+    """Avalia a densidade nos próprios pontos da amostra."""
     if df.empty:
         return []
-
-    lats = df[lat_col].to_numpy()
-    lngs = df[lng_col].to_numpy()
-
-    if sample_max is not None and lats.size > sample_max:
-        rng = np.random.default_rng(seed)
-        idx = rng.choice(lats.size, size=sample_max, replace=False)
-        lats_s, lngs_s = lats[idx], lngs[idx]
-    else:
-        lats_s, lngs_s = lats, lngs
-
-    kde = _build_kde(lats_s, lngs_s, bandwidth=bandwidth)
-    density = kde(np.vstack([lngs_s, lats_s]))
-
-    peak = density.max()
-    weights = density / peak if peak > 0 else np.zeros_like(density)
-
-    return [[float(la), float(ln), float(w)] for la, ln, w in zip(lats_s, lngs_s, weights)]
+    kde = FittedKDE(
+        df[lat_col].to_numpy(), df[lng_col].to_numpy(), bandwidth, None, sample_max, seed
+    )
+    return kde.point_heatmap(None)
 
 
 def grid_density(
@@ -115,63 +171,10 @@ def grid_density(
     sample_max: int | None = 10000,
     seed: int = 42,
 ) -> KDEGrid:
-    """
-    Avalia KDE em uma grade regular sobre `bbox`.
-
-    Útil para gerar GeoJSON de células (Mapbox GL JS, PostGIS hex/quad).
-
-    Parameters
-    ----------
-    bbox : tuple ou None
-        (min_lng, min_lat, max_lng, max_lat). Default = bbox real dos dados.
-    grid_size : int
-        N células por eixo (grade N x N).
-    sample_max : int | None
-        Amostragem do conjunto de treino do KDE (não da grade).
-
-    Returns
-    -------
-    KDEGrid
-    """
-    if df.empty:
-        raise ValueError("DataFrame vazio — sem dados para KDE.")
-
+    """Avalia a densidade em uma grade regular para exportar GeoJSON."""
     lats = df[lat_col].to_numpy()
     lngs = df[lng_col].to_numpy()
-
+    kde = FittedKDE(lats, lngs, bandwidth, None, sample_max, seed)
     if bbox is None:
-        bbox = (
-            float(lngs.min()),
-            float(lats.min()),
-            float(lngs.max()),
-            float(lats.max()),
-        )
-
-    if sample_max is not None and lats.size > sample_max:
-        rng = np.random.default_rng(seed)
-        idx = rng.choice(lats.size, size=sample_max, replace=False)
-        lats_t, lngs_t = lats[idx], lngs[idx]
-    else:
-        lats_t, lngs_t = lats, lngs
-
-    kde = _build_kde(lats_t, lngs_t, bandwidth=bandwidth)
-    bw_factor = float(kde.factor)
-
-    xi = np.linspace(bbox[0], bbox[2], grid_size)
-    yi = np.linspace(bbox[1], bbox[3], grid_size)
-    XX, YY = np.meshgrid(xi, yi)
-    grid_xy = np.vstack([XX.ravel(), YY.ravel()])
-    zi = kde(grid_xy).reshape(grid_size, grid_size)
-
-    zmax = zi.max()
-    if zmax > 0:
-        zi = zi / zmax
-
-    return KDEGrid(
-        xi=xi,
-        yi=yi,
-        zi=zi.astype(np.float32),
-        bbox=bbox,
-        bandwidth=bw_factor,
-        n_points=int(lats.size),
-    )
+        bbox = (float(lngs.min()), float(lats.min()), float(lngs.max()), float(lats.max()))
+    return kde.grid_density(bbox, grid_size)

@@ -74,7 +74,7 @@ KDE_MIN_DENSITY: float = 0.05  # threshold para descartar células vazias (mant�
 # Grade ~H3 res 8 (~0,7 km²). 0.0065° ≈ 720 m na latitude de SP.
 GRID_CELL_DEG: float = 0.0065
 SOURCE_YEAR: int = 2026
-PIPELINE_VERSION: str = "0.2.0"
+PIPELINE_VERSION: str = "0.3.0"
 
 DISCLAIMER: str = (
     "Incidência observada de boletins de ocorrência georreferenciados. "
