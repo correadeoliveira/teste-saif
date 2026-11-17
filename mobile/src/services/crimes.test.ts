@@ -107,4 +107,24 @@ describe("reportPanic", () => {
         assert.equal(again.ok, true);
         if (again.ok) assert.equal(again.queued, false);
     });
+    it("serializa envios offline e preserva a fila quando um flush precisa ser repetido", async () => {
+        const first = { lat: -23.55, lng: -46.63 };
+        const second = { lat: -23.56, lng: -46.64 };
+        await Promise.all([reportPanic(first), reportPanic(second)]);
+
+        online();
+        const sent: number[] = [];
+        let blocked = true;
+        setRpcHandler(async (_fn: string, args: { p_lat: number }) => {
+            sent.push(args.p_lat);
+            const result = blocked && args.p_lat === second.lat
+                ? { ok: false, error: "rate_limited" }
+                : { ok: true, id: sent.length };
+            return { data: result, error: null };
+        });
+        await flushPanicQueue();
+        blocked = false;
+        await Promise.all([flushPanicQueue(), flushPanicQueue()]);
+        assert.deepEqual(sent, [first.lat, second.lat, second.lat]);
+    });
 });

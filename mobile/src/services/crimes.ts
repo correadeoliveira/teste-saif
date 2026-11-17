@@ -8,6 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { loadProfile } from "./profileStore";
 import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
+import { logOperation } from "./telemetry";
 
 export type CrimeType = "furto" | "roubo" | "outros";
 
@@ -37,6 +38,13 @@ type QueuedPanic = {
 };
 
 const QUEUE_KEY = "saifen.panic.queue";
+let pending: Promise<unknown> = Promise.resolve();
+
+function serial<T>(operation: () => Promise<T>): Promise<T> {
+    const next = pending.then(operation);
+    pending = next.catch(() => undefined);
+    return next;
+}
 
 function asCrimeType(value: string | undefined): CrimeType {
     if (value === "furto" || value === "roubo" || value === "outros") return value;
@@ -72,9 +80,9 @@ async function postReport(
         p_lng: lng,
         p_crime_type: crimeType,
         p_device_id: deviceId,
-    });
+    }).then((response) => response, () => ({ data: null, error: true }));
 
-    if (error) return { ok: false, error: error.message };
+    if (error) return { ok: false, error: "network" };
 
     const payload = data as {
         ok?: boolean;
@@ -87,7 +95,7 @@ async function postReport(
     } | null;
 
     if (!payload) return { ok: false, error: "network" };
-    if (payload.ok === false) {
+    if (payload.ok !== true) {
         return {
             ok: false,
             error: payload.error ?? "network",
@@ -105,76 +113,61 @@ async function postReport(
     };
 }
 
-export async function flushPanicQueue(): Promise<void> {
+async function drainQueue(): Promise<void> {
     if (!isSupabaseConfigured()) return;
     const queue = await readQueue();
-    if (!queue.length) return;
-
-    const remaining: QueuedPanic[] = [];
+    let removed = 0;
     for (const item of queue) {
         const result = await postReport(item.lat, item.lng, item.crime_type, item.device_id);
-        if (!result.ok) remaining.push(item);
+        if (!result.ok && result.error !== "invalid_coords" && result.error !== "device_required") {
+            break;
+        }
+        removed++;
+        // Persist progress before trying the next queued report.
+        await writeQueue(queue.slice(removed));
     }
-    await writeQueue(remaining);
+    if (queue.length) {
+        logOperation("panic_flush", removed === queue.length ? "ok" : "queued", { count: removed });
+    }
 }
 
-export async function reportPanic(input: {
+export function flushPanicQueue(): Promise<void> {
+    return serial(drainQueue).catch(() => logOperation("panic_flush", "error"));
+}
+
+export function reportPanic(input: {
     lat: number;
     lng: number;
     crimeType?: CrimeType;
 }): Promise<PanicResult> {
-    const crimeType = input.crimeType ?? "outros";
-    const profile = await loadProfile();
+    const started = Date.now();
+    return serial(async (): Promise<PanicResult> => {
+        const crimeType = asCrimeType(input.crimeType);
+        if (!Number.isFinite(input.lat) || !Number.isFinite(input.lng)
+            || Math.abs(input.lat) > 90 || Math.abs(input.lng) > 180) {
+            return { ok: false, error: "invalid_coords" };
+        }
 
-    if (!Number.isFinite(input.lat) || !Number.isFinite(input.lng)) {
-        return { ok: false, error: "invalid_coords" };
-    }
+        const profile = await loadProfile();
+        const online = isSupabaseConfigured();
+        if (online) {
+            await drainQueue();
+            const result = await postReport(input.lat, input.lng, crimeType, profile.device_id);
+            if (result.ok || result.error !== "network") return result;
+        }
 
-    if (!isSupabaseConfigured()) {
-        const queued: QueuedPanic = {
-            lat: input.lat,
-            lng: input.lng,
-            crime_type: crimeType,
-            device_id: profile.device_id,
-            at: new Date().toISOString(),
-        };
+        const at = new Date().toISOString();
         const queue = await readQueue();
-        queue.push(queued);
+        queue.push({ lat: input.lat, lng: input.lng, crime_type: crimeType, device_id: profile.device_id, at });
         await writeQueue(queue);
         return {
-            ok: true,
-            id: null,
-            bo_number: `LOCAL-${queued.at}`,
-            crime_type: crimeType,
-            period: null,
-            queued: true,
+            ok: true, id: null, queued: true, crime_type: crimeType, period: null,
+            bo_number: `${online ? "QUEUED" : "LOCAL"}-${at}`,
         };
-    }
-
-    try {
-        await flushPanicQueue();
-        const result = await postReport(input.lat, input.lng, crimeType, profile.device_id);
-        if (!result.ok && result.error !== "rate_limited" && result.error !== "invalid_coords" && result.error !== "device_required") {
-            const queue = await readQueue();
-            queue.push({
-                lat: input.lat,
-                lng: input.lng,
-                crime_type: crimeType,
-                device_id: profile.device_id,
-                at: new Date().toISOString(),
-            });
-            await writeQueue(queue);
-            return {
-                ok: true,
-                id: null,
-                bo_number: `QUEUED-${Date.now()}`,
-                crime_type: crimeType,
-                period: null,
-                queued: true,
-            };
-        }
+    }).catch((): PanicErr => ({ ok: false, error: "network" })).then((result) => {
+        logOperation("panic_report", result.ok ? (result.queued ? "queued" : "ok") : "error", {
+            durationMs: Date.now() - started,
+        });
         return result;
-    } catch {
-        return { ok: false, error: "network" };
-    }
+    });
 }

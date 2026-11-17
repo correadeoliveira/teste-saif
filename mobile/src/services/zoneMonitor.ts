@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 import * as Location from "expo-location";
 
 import { flushPanicQueue } from "./crimes";
-import { loadHeatmap, persistHotspots } from "./heatmap";
+import { loadHeatmap } from "./heatmap";
 import { getCurrent, requestBackgroundPermission, requestPermission, watch } from "./location";
 import { configureNotifications } from "./notifications";
 import { LOCATION_TASK } from "../tasks/locationTask";
@@ -33,8 +33,7 @@ function setMode(next: MonitorMode): void {
 
 async function cacheHeatmap(): Promise<void> {
     try {
-        const heat = await loadHeatmap("all");
-        await persistHotspots(heat.points);
+        await loadHeatmap();
     } catch {
         /* heatmap continua no fallback interno */
     }

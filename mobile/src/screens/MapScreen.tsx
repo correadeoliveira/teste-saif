@@ -34,7 +34,7 @@ export function MapScreen() {
         };
     }, []);
 
-    const zoneColor = zone ? colors.threat[zone.level] : colors.textDim;
+    const zoneColor = zone && zone.source !== "unknown" ? colors.threat[zone.level] : colors.textDim;
 
     return (
         <View style={styles.root}>
@@ -75,13 +75,13 @@ export function MapScreen() {
             <View style={[styles.hud, { top: insets.top + 8 }]}>
                 <Text style={styles.hudTitle}>SAIFEN · MOBILE</Text>
                 <Text style={styles.hudLine}>
-                    Heatmap: {heat?.source ?? "…"} · {heat?.count ?? 0} pts
+                    Heatmap: {heat?.source === "fallback" ? "demonstração" : heat?.source === "cache" ? `cache (${heat.origin})` : heat?.source ?? "…"} · {heat?.count ?? 0} pts
                 </Text>
                 <Text style={styles.hudLine}>
                     GPS: {me ? `${me.lat.toFixed(4)} | ${me.lng.toFixed(4)}` : "…"}
                 </Text>
                 <Text style={[styles.hudLine, { color: zoneColor }]}>
-                    Zona: {zone ? ZONE_LABEL[zone.level] : "…"} · alertas {monitor}
+                    Zona: {zone?.source === "unknown" ? "indisponível" : zone ? ZONE_LABEL[zone.level] : "…"} · alertas {monitor}
                 </Text>
             </View>
 
