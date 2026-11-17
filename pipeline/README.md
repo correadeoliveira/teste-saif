@@ -123,7 +123,7 @@ pytest -q --cov=saifen_pipeline --cov-fail-under=70
 ```
 
 - **pipeline-ci** (PR/push em `pipeline/**`): ruff + pytest + contrato JSON em `shared/schema/`. Não gera heatmap.
-- **pipeline.yml** (só `main` / schedule / dispatch): pytest **antes** do treino KDE; publicação de `shared/heatmaps/`, `shared/current_run.json` e `shared/summary.json` na `main`.
+- **pipeline.yml** (push relevante na `main` ou execução manual): pytest **antes** do treino KDE. Publica `shared/heatmaps/`, `shared/current_run.json` e `shared/summary.json` na `main`.
 
 Behavior (sklearn) é pacote irmão: `cd pipeline/behavior && pytest -q`.
 

@@ -7,6 +7,7 @@ import { MarkerManager } from './MarkerManager.js';
 import { FlowLayer } from './FlowLayer.js';
 import { LightingLayer } from './LightingLayer.js';
 import { ContactsLayer } from './ContactsLayer.js';
+import { AlertLayer } from './AlertLayer.js';
 import { createLocalBasemap } from './LocalBasemap.js';
 import { computeRiskScale, fallbackScale, gradientToTexture, applyGradientTexture } from './riskScale.js';
 
@@ -94,6 +95,9 @@ export class CrimeMap {
         this.contactsLayer = new ContactsLayer(this.map);
         this.contactsLayer.init();
 
+        this.alertLayer = new AlertLayer(this.map);
+        this.alertLayer.init();
+
         this.setupEvents();
     }
 
@@ -101,6 +105,8 @@ export class CrimeMap {
 
     destroy() {
         this._loadSeq++;
+        this.alertLayer?.destroy();
+        this.alertLayer = null;
         this.map?.remove();
         this.map = null;
     }
