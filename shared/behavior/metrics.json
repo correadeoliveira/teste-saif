@@ -1,8 +1,11 @@
 {
+  "mode": "synthetic_demo",
   "train": {
     "fold": "train",
     "n_windows": 64,
     "n_sessions": 8,
+    "n_genuine": 4,
+    "n_impostor": 4,
     "accuracy": 1.0,
     "precision": 1.0,
     "recall": 1.0,
@@ -16,6 +19,8 @@
     "fold": "validation",
     "n_windows": 32,
     "n_sessions": 4,
+    "n_genuine": 2,
+    "n_impostor": 2,
     "accuracy": 1.0,
     "precision": 1.0,
     "recall": 1.0,
@@ -29,13 +34,15 @@
     "fold": "test",
     "n_windows": 32,
     "n_sessions": 4,
-    "accuracy": 0.9375,
+    "n_genuine": 2,
+    "n_impostor": 2,
+    "accuracy": 1.0,
     "precision": 1.0,
-    "recall": 0.875,
-    "f1": 0.9333333333333333,
+    "recall": 1.0,
+    "f1": 1.0,
     "auc": 1.0,
     "far": 0.0,
-    "frr": 0.125,
+    "frr": 0.0,
     "session_accuracy": 1.0
   }
 }

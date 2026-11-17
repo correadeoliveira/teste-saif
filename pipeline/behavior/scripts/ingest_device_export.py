@@ -18,7 +18,7 @@ def ingest(src: Path, dst: Path) -> int:
     src = src.resolve()
     dst = dst.resolve()
     if not src.exists():
-        print(f"incoming vazio: {src} (crie a pasta e solte os .jsonl + .meta.json)", file=sys.stderr)
+        print(f"incoming vazio: {src} (adicione .jsonl e .meta.json)", file=sys.stderr)
         dst.mkdir(parents=True, exist_ok=True)
         return 0
     copied = 0

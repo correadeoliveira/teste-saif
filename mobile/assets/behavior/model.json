@@ -1,5 +1,7 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "evaluation_mode": "synthetic_demo",
+  "training_data_sha256": "7f50a90e0c75223a9157da16d200fa1049e41f4ae55b8ff2321c554c4671e19a",
   "type": "logistic_regression",
   "feature_names": [
     "ax_mean",
@@ -184,7 +186,7 @@
     0.22859923147110667
   ],
   "intercept": -0.0018108935997725299,
-  "threshold": 0.9849325257151621,
+  "threshold": 0.4991975949747397,
   "window_ms": 2000,
   "overlap": 0.5,
   "sample_rate_hz": 50,

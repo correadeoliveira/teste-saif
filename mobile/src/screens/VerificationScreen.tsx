@@ -15,7 +15,7 @@ export function VerificationScreen() {
         <View style={screenStyles.root}>
             <Text style={screenStyles.title}>VERIFICATION</Text>
             <Text style={screenStyles.body}>
-                10s de IMU → janelas → features → Logistic Regression local. Offline.
+                Demonstração offline com modelo sintético. 10s de IMU → janelas → features → Logistic Regression local. Offline.
             </Text>
             <Text style={screenStyles.dim}>model.json {modelVersion()}</Text>
             <CrtButton

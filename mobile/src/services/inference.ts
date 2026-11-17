@@ -1,5 +1,26 @@
-import { extractWindowFeatures, windowSamples } from "./features";
+import { extractWindowFeatures, FEATURE_NAMES, windowSamples } from "./features";
 import type { BehaviorModel, ImuSample } from "./types";
+
+export function validateModel(value: unknown): value is BehaviorModel {
+    if (!value || typeof value !== "object") return false;
+    const model = value as Partial<BehaviorModel>;
+    const { feature_names: names, scaler, coef, threshold, window_ms: windowMs,
+        sample_rate_hz: rate, overlap } = model;
+    if (typeof model.version !== "string" || !model.version.startsWith("1.")
+        || model.type !== "logistic_regression" || model.label_positive !== "genuine"
+        || !Number.isFinite(model.intercept)
+        || !Array.isArray(names) || names.length === 0 || new Set(names).size !== names.length
+        || !names.every((name) => FEATURE_NAMES.includes(name))) return false;
+
+    const vectors = [coef, scaler?.mean, scaler?.scale];
+    return vectors.every((vector) => Array.isArray(vector) && vector.length === names.length
+        && vector.every(Number.isFinite))
+        && scaler!.scale.every((value) => value > 0)
+        && typeof threshold === "number" && threshold >= 0 && threshold <= 1
+        && typeof windowMs === "number" && Number.isInteger(windowMs) && windowMs > 0 && windowMs <= 60_000
+        && typeof rate === "number" && Number.isFinite(rate) && rate > 0 && rate <= 1000
+        && typeof overlap === "number" && overlap >= 0 && overlap < 1;
+}
 
 export function sigmoid(z: number): number {
     if (z >= 0) {
@@ -20,8 +41,7 @@ export function scaleFeatures(x: number[], mean: number[], scale: number[]): num
 export function decisionScore(x: number[], model: BehaviorModel): number {
     const xs = scaleFeatures(x, model.scaler.mean, model.scaler.scale);
     let z = model.intercept;
-    const n = Math.min(model.coef.length, xs.length);
-    for (let i = 0; i < n; i++) z += model.coef[i] * xs[i];
+    for (let i = 0; i < model.coef.length; i++) z += model.coef[i] * xs[i];
     return sigmoid(z);
 }
 
@@ -33,21 +53,27 @@ function median(xs: number[]): number {
 }
 
 export type VerifyResult = {
+    status: "ok";
     score: number;
     accept: boolean;
     n_windows: number;
     scores: number[];
     latency_ms: number;
-};
+} | { status: "unavailable"; reason: "invalid_model" | "insufficient_samples"; latency_ms: number };
 
-export function verifySession(samples: ImuSample[], model: BehaviorModel): VerifyResult {
+export function verifySession(samples: ImuSample[], model: BehaviorModel | null): VerifyResult {
     const t0 = Date.now();
+    if (!validateModel(model)) return { status: "unavailable", reason: "invalid_model", latency_ms: 0 };
     const windows = windowSamples(samples, model.window_ms, model.overlap, model.sample_rate_hz);
     const scores = windows.map((w) =>
         decisionScore(extractWindowFeatures(w, model.feature_names), model)
     );
+    if (!scores.length || !scores.every(Number.isFinite)) {
+        return { status: "unavailable", reason: "insufficient_samples", latency_ms: Date.now() - t0 };
+    }
     const score = median(scores);
     return {
+        status: "ok",
         score,
         accept: score >= model.threshold,
         n_windows: windows.length,

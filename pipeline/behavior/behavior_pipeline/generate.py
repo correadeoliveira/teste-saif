@@ -9,7 +9,6 @@ import pandas as pd
 
 from behavior_pipeline import config
 from behavior_pipeline.features import extract_window_features, window_frames
-from behavior_pipeline.io import iter_sessions
 
 
 def generate_session(
@@ -43,7 +42,9 @@ def generate_session(
         "activity": "demo",
         "label": label,
         "started_at": datetime.fromtimestamp(t0 / 1000.0, tz=timezone.utc).isoformat(),
-        "ended_at": datetime.fromtimestamp((t0 + duration_s * 1000) / 1000.0, tz=timezone.utc).isoformat(),
+        "ended_at": datetime.fromtimestamp(
+            (t0 + duration_s * 1000) / 1000.0, tz=timezone.utc
+        ).isoformat(),
         "n_samples": n,
         "sample_rate_target_hz": hz,
         "sample_rate_effective_hz": hz,
@@ -84,14 +85,8 @@ def generate_demo(n_per_class: int = 8, dest: Path | None = None) -> Path:
 
 
 def first_window_samples() -> list[dict]:
-    sessions = iter_sessions()
-    if not sessions:
-        raise FileNotFoundError("sem sessões para fixture de paridade")
-    df, _meta = sessions[0]
-    frames = window_frames(df)
-    if not frames:
-        raise RuntimeError("sessão sem janelas")
-    return frames[0].to_dict(orient="records")
+    df, _ = generate_session("parity", "synthetic", config.LABEL_POSITIVE, seed=998)
+    return window_frames(df)[0].to_dict(orient="records")
 
 
 def window_feature_vector(records: list[dict]) -> list[float]:

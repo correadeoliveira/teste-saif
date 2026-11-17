@@ -1,18 +1,13 @@
+import { validateModel } from "./inference";
 import type { BehaviorModel } from "./types";
-
 import bundled from "../../assets/behavior/model.json";
 
-let cached: BehaviorModel | null = null;
+const model: BehaviorModel | null = validateModel(bundled) ? bundled as BehaviorModel : null;
 
-export function loadBundledModel(): BehaviorModel {
-    if (!cached) cached = bundled as BehaviorModel;
-    return cached;
+export function loadBundledModel(): BehaviorModel | null {
+    return model;
 }
 
 export function modelVersion(): string {
-    try {
-        return loadBundledModel().version;
-    } catch {
-        return "none";
-    }
+    return model?.version ?? "indisponível";
 }

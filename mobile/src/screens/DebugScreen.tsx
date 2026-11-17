@@ -19,7 +19,7 @@ export function DebugScreen() {
     const replay = () => {
         const samples = generateSyntheticImu(DEFAULT_CAPTURE_MS, "genuine", TARGET_HZ, 7);
         const r = verifySession(samples, model);
-        setLastScore(`${r.score.toFixed(4)} accept=${r.accept} win=${r.n_windows} ${r.latency_ms}ms`);
+        setLastScore(r.status === "unavailable" ? r.reason : `${r.score.toFixed(4)} accept=${r.accept} win=${r.n_windows} ${r.latency_ms}ms`);
     };
 
     const liveLine = useMemo(() => {
@@ -34,12 +34,12 @@ export function DebugScreen() {
             <Hud
                 title="RUNTIME"
                 lines={[
-                    `model: ${modelVersion()}  type: ${model.type}`,
+                    `model: ${modelVersion()}  type: ${model?.type ?? "—"}`,
                     `target_hz: ${TARGET_HZ}  window_ms: ${WINDOW_MS}  features: ${FEATURE_NAMES.length}`,
                     `live_hz≈${hz.toFixed(1)}  samples: ${stream.count}`,
                     liveLine,
                     `last_score: ${lastScore}`,
-                    `threshold: ${model.threshold}`,
+                    `threshold: ${model?.threshold ?? "—"}`,
                 ]}
             />
             <CrtButton
