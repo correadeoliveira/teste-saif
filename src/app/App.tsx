@@ -86,6 +86,16 @@ const TIME_SLOTS = [
 ];
 const GROUPS      = ["mulheres", "ciclistas", "idosos", "PCD", "turistas", "motoristas"];
 
+const FILTER_STORAGE_KEY = "saifen.map.filters.v1";
+
+function savedFilters(key: "types" | "times" | "groups", allowed: string[], defaults: string[]) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(FILTER_STORAGE_KEY) ?? "null")?.[key];
+    if (Array.isArray(saved)) return new Set<string>(saved.filter((value) => allowed.includes(value)));
+  } catch { /* Storage is optional. */ }
+  return new Set(defaults);
+}
+
 // ── UTIL: CRT glow text shadow ──────────────────────────────────────────────
 const crtGlow = (color = G.bright, strength = 8) =>
   `0 0 ${strength}px ${color}, 0 0 ${strength * 2}px ${color}40`;
@@ -873,7 +883,7 @@ function StatsView({
           <button
             onClick={() => {
               const payload = { types: Array.from(activeTypes), times: Array.from(activeTimes), groups: Array.from(activeGroups) };
-              fetch('/api/save-filters', { method: 'POST', body: JSON.stringify(payload) }).catch(() => {});
+              try { localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(payload)); } catch { /* Storage is optional. */ }
             }}
             className="px-4 py-2 text-xs flex items-center gap-2 transition-all duration-150 hover:opacity-80"
             style={{
@@ -982,12 +992,12 @@ function MapView({
 }) {
   // Faixas de risco da fatia carregada, publicadas pelo CrimeMap.
   const [scale, setScale] = useState<any>(null);
-  const [slice, setSlice] = useState<{ crimeType: string; period: string }>({ crimeType: "all", period: "all" });
+  const [slice, setSlice] = useState({ crimeType: "all", period: "all", source: "loading" });
 
   useEffect(() => {
     const onLoaded = (e: any) => {
       setScale(e.detail?.scale ?? null);
-      setSlice({ crimeType: e.detail?.crimeType ?? "all", period: e.detail?.period ?? "all" });
+      setSlice({ crimeType: e.detail?.crimeType ?? "all", period: e.detail?.period ?? "all", source: e.detail?.source ?? "loading" });
     };
     document.addEventListener("heatmap:loaded", onLoaded as EventListener);
     return () => document.removeEventListener("heatmap:loaded", onLoaded as EventListener);
@@ -1010,7 +1020,15 @@ function MapView({
       {/* HUD corners */}
       <HudCorners size={18} />
 
-      {/* legenda de risco, só quando o heatmap está ligado */}
+      <div data-heatmap-source={slice.source} role="status"
+           className="absolute top-2 right-2 z-[500] bg-black/80 px-2 py-1 text-xs"
+           style={{ color: G.bright }}>
+        {slice.source === "real"
+          ? `SSP-SP · ${slice.crimeType === "all" ? "todos os tipos" : slice.crimeType} · ${slice.period === "all" ? "todos os períodos" : slice.period}`
+          : slice.source === "mock" ? "Heatmap de demonstração" : "Carregando heatmap…"}
+      </div>
+
+      {/* Legenda de risco, visível com a camada de calor. */}
       {activeLayers.has("heat") && (
         <RiskLegend scale={scale} crimeType={slice.crimeType} period={slice.period} />
       )}
@@ -1064,10 +1082,10 @@ export default function App() {
   }, [customSafePoints]);
 
   // Filter states
-  const [activeTypes,  setActiveTypes]  = useState<Set<string>>(new Set(CRIME_TYPES.map(t => t.id)));
+  const [activeTypes,  setActiveTypes]  = useState(() => savedFilters("types", CRIME_TYPES.map(t => t.id), CRIME_TYPES.map(t => t.id)));
   const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set());
-  const [activeTimes,  setActiveTimes]  = useState<Set<string>>(new Set(TIME_SLOTS.map(t => t.id)));
-  const [activeGroups, setActiveGroups] = useState<Set<string>>(new Set());
+  const [activeTimes,  setActiveTimes]  = useState(() => savedFilters("times", TIME_SLOTS.map(t => t.id), TIME_SLOTS.map(t => t.id)));
+  const [activeGroups, setActiveGroups] = useState(() => savedFilters("groups", GROUPS, []));
 
   return (
     <>

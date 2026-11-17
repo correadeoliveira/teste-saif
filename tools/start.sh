@@ -40,47 +40,19 @@ APP_URL="http://localhost:${PORT}/web/"
 
 banner() { printf "\n▸ %s\n" "$*"; }
 
-# ── 1. Python environment ───────────────────────────────────────────
-banner "Setting up Python environment…"
-if [[ ! -d ".venv" ]]; then
-    python3 -m venv .venv
-    .venv/bin/pip install --upgrade pip -q
-    .venv/bin/pip install -r pipeline/requirements.txt -q
-    echo "   venv created + dependencies installed"
-else
-    # shellcheck disable=SC1091
-    source .venv/bin/activate
-    if ! python -c "import pandas, scipy" 2>/dev/null; then
-        pip install -r pipeline/requirements.txt -q
-        echo "   missing deps installed"
-    else
-        echo "   venv ready"
-    fi
-fi
-# shellcheck disable=SC1091
-source .venv/bin/activate
-
-# ── 2. Data pipeline ────────────────────────────────────────────────
-if [[ ! -f shared/heatmaps/heatmap_points.json ]] || [[ ! -f shared/summary.json ]]; then
-    banner "Generating heatmaps (first run — may take ~40s)…"
-    python pipeline/scripts/run_pipeline.py --force
-elif [[ "$FORCE_PIPELINE" -eq 1 ]]; then
+# ── 1. Python environment and pipeline ────────────────────────────
+if [[ "$FORCE_PIPELINE" -eq 1 ]]; then
     banner "Rebuilding heatmaps (--force)…"
-    python pipeline/scripts/run_pipeline.py --force
+    "$ROOT/tools/run-pipeline.sh" --force
 else
-    banner "Checking pipeline cache…"
-    python pipeline/scripts/run_pipeline.py
+    banner "Validating or rebuilding heatmaps…"
+    "$ROOT/tools/run-pipeline.sh"
 fi
 
 # ── 3. HTTP server ──────────────────────────────────────────────────
-if lsof -ti:"$PORT" >/dev/null 2>&1; then
-    banner "Port ${PORT} in use — stopping previous server…"
-    lsof -ti:"$PORT" | xargs kill -9 2>/dev/null || true
-    sleep 0.5
-fi
 
 banner "Starting server on :${PORT}"
-python3 -m http.server "$PORT" >/dev/null 2>&1 &
+"$ROOT/tools/dev-web.sh" "$PORT" &
 SERVER_PID=$!
 
 cleanup() {
@@ -90,12 +62,17 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # wait until the server accepts connections
+ready=0
 for _ in $(seq 1 20); do
+    if ! kill -0 "$SERVER_PID" 2>/dev/null; then wait "$SERVER_PID"; exit 1; fi
     if curl -sf -o /dev/null "http://127.0.0.1:${PORT}/web/"; then
+        ready=1
         break
     fi
     sleep 0.25
 done
+
+if [[ "$ready" -eq 0 ]]; then echo "Servidor indisponível na porta $PORT" >&2; exit 1; fi
 
 # ── 4. Open browser ─────────────────────────────────────────────────
 printf "\n"

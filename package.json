@@ -8,7 +8,8 @@
     "dev": "vite",
     "preview": "vite preview",
     "train": "bash tools/run-pipeline.sh",
-    "train:force": "bash tools/run-pipeline.sh --force"
+    "train:force": "bash tools/run-pipeline.sh --force",
+    "test": "node --test web/test/*.test.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

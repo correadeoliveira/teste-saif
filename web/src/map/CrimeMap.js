@@ -1,3 +1,4 @@
+import { logHeatmap } from '../../../shared/web/telemetry.js';
 import { SP_CENTER, DEFAULT_ZOOM, crimeHeatData, crimesByType } from '../data/MockData.js';
 import { heatmapLoader, HeatmapLoader } from '../data/HeatmapLoader.js';
 import { RouteManager } from './RouteManager.js';
@@ -16,8 +17,8 @@ export class CrimeMap {
         this.lightingLayer = null;
         this._activeFilters = { types: [], period: 'all' };
         this._heatmapLoader = heatmapLoader;
-        this._realDataLoaded = false;
         this._currentDatasetKey = null;
+        this._loadSeq = 0;
     }
 
     init() {
@@ -70,30 +71,33 @@ export class CrimeMap {
      * @param {string} crimeType  'all' | 'furto' | 'roubo' | 'outros'
      * @returns {Promise<{count:number, source:'real'|'mock'}>}
      */
-    async loadRealHeatmap(crimeType = 'all', period = 'all') {
-        const typeKey = HeatmapLoader.slicesAvailableFor(crimeType) ? crimeType : 'all';
-        const periodKey = HeatmapLoader.periodsAvailableFor(period) ? period : 'all';
+    async loadRealHeatmap(requestedType = 'all', requestedPeriod = 'all') {
+        const typeKey = HeatmapLoader.slicesAvailableFor(requestedType) ? requestedType : 'all';
+        const periodKey = HeatmapLoader.periodsAvailableFor(requestedPeriod) ? requestedPeriod : 'all';
         const datasetKey = `real:${typeKey}:${periodKey}`;
-        if (datasetKey === this._currentDatasetKey) {
-            return { count: this.heatLayer._latlngs?.length ?? 0, source: 'real' };
-        }
+        const seq = ++this._loadSeq;
+        if (datasetKey === this._currentDatasetKey) return this._heatmapResult;
+        const started = performance.now();
         try {
-            const { points, count } = await this._heatmapLoader.loadPoints(typeKey, periodKey);
+            const { points, count, crimeType, period } = await this._heatmapLoader.loadPoints(typeKey, periodKey);
+            if (seq !== this._loadSeq) return { count, source: 'stale' };
             this.heatLayer.setLatLngs(points);
-            this._realDataLoaded = true;
-            this._currentDatasetKey = datasetKey;
-            document.dispatchEvent(new CustomEvent('heatmap:loaded', {
-                detail: { count, crimeType: typeKey, period: periodKey, source: 'real' },
-            }));
-            return { count, source: 'real' };
-        } catch (err) {
-            console.warn('[CrimeMap] Heatmap real indisponível, usando mock.', err);
-            this.heatLayer.setLatLngs(crimeHeatData);
+            this._currentDatasetKey = `real:${crimeType}:${period}`;
+            this._heatmapResult = { count, crimeType, period, source: 'real' };
+            logHeatmap('static', count, performance.now() - started, crimeType !== typeKey || period !== periodKey);
+            document.dispatchEvent(new CustomEvent('heatmap:loaded', { detail: this._heatmapResult }));
+            return this._heatmapResult;
+        } catch {
+            if (seq !== this._loadSeq) return { count: 0, source: 'stale' };
+            const points = this._mockHeatData(this._activeFilters);
+            this.heatLayer.setLatLngs(points);
             this._currentDatasetKey = 'mock:all';
-            document.dispatchEvent(new CustomEvent('heatmap:loaded', {
-                detail: { count: crimeHeatData.length, crimeType: 'all', source: 'mock', error: String(err) },
-            }));
-            return { count: crimeHeatData.length, source: 'mock' };
+
+            const detail = { count: points.length, crimeType: 'all', period: 'all', source: 'mock' };
+            this._heatmapResult = detail;
+            logHeatmap('demo', detail.count, performance.now() - started, true);
+            document.dispatchEvent(new CustomEvent('heatmap:loaded', { detail }));
+            return detail;
         }
     }
 
@@ -107,18 +111,12 @@ export class CrimeMap {
     }
 
     _rebuildHeatmap(filters) {
-        if (this._realDataLoaded) {
-            const { types, period } = filters;
-            const slicedSelection =
-                types && types.length === 1 && HeatmapLoader.slicesAvailableFor(types[0])
-                    ? types[0]
-                    : 'all';
-            const periodSel =
-                period && HeatmapLoader.periodsAvailableFor(period) ? period : 'all';
-            this.loadRealHeatmap(slicedSelection, periodSel);
-            return;
-        }
+        const { types, period } = filters;
+        const type = types?.length === 1 ? types[0] : 'all';
+        void this.loadRealHeatmap(type, period);
+    }
 
+    _mockHeatData(filters) {
         const { types, period } = filters;
         const allTypes = ['furto', 'roubo', 'outros'];
         const activeTypes = (types && types.length > 0) ? types : allTypes;
@@ -128,11 +126,9 @@ export class CrimeMap {
             return typeOk && periodOk;
         });
 
-        const heatData = filtered.length > 0
+        return filtered.length > 0
             ? filtered.map(c => [c.lat, c.lng, c.intensity])
             : crimeHeatData;
-
-        this.heatLayer.setLatLngs(heatData);
     }
 
     showHeatmap(visible) {

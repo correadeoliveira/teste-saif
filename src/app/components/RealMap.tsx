@@ -29,12 +29,11 @@ export function RealMap({
     if (mapContainerRef.current && !crimeMapRef.current) {
       crimeMapRef.current = new CrimeMap();
       crimeMapRef.current.init();
-      crimeMapRef.current.loadRealHeatmap("all");
     }
 
     return () => {
       if (crimeMapRef.current?.map) {
-        crimeMapRef.current.map.remove();
+        crimeMapRef.current.destroy();
         crimeMapRef.current = null;
       }
     };

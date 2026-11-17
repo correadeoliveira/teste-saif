@@ -24,15 +24,22 @@ export class App {
         this.bootScreen.run();
     }
 
-    async _initCoreSystems() {
+    _initCoreSystems() {
         // 1. Mapa
         this.crimeMap = new CrimeMap();
         this.crimeMap.init();
 
-        // 1b. Heatmap real do pipeline Python (fallback silencioso no mock).
-        // Não bloqueia o boot — carrega em paralelo aos próximos sistemas.
-        const heatmapPromise = this.crimeMap.loadRealHeatmap('all');
-        const summaryPromise = heatmapLoader.loadSummary().catch(() => null);
+        let summary = null;
+        let latest;
+        document.addEventListener('heatmap:loaded', ({ detail }) => {
+            latest = detail;
+            this._renderDataSourceInfo(detail, summary);
+        });
+        heatmapLoader.loadSummary().then((data) => {
+            summary = data;
+            if (latest?.source === 'real') this._renderDataSourceInfo(latest, summary);
+        }).catch(() => {});
+        void this.crimeMap.loadRealHeatmap();
 
         // 2. Filtros
         this.filterSystem = new FilterSystem();
@@ -85,16 +92,15 @@ export class App {
             const { lat, lng } = e.detail;
             this.riskAnalyzer.analyze(lat, lng, this.filterSystem.getActiveFilters());
         });
-
-        // 10. Quando o heatmap real terminar de carregar, atualiza HUD com
-        //     contadores oficiais (vindos de output/summary.json).
-        const [heatResult, summary] = await Promise.all([heatmapPromise, summaryPromise]);
-        this._renderDataSourceInfo(heatResult, summary);
     }
 
     _renderDataSourceInfo(heatResult, summary) {
         const ctx = document.getElementById('context-text');
-        if (!ctx) return;
+        if (!ctx || heatResult.source === 'stale') return;
+        ctx.dataset.heatmapSource = heatResult.source;
+        const type = heatResult.crimeType === 'all' ? 'todos os tipos' : heatResult.crimeType;
+        const period = heatResult.period === 'all' ? 'todos os períodos' : heatResult.period;
+        const slice = `${type} · ${period}`;
 
         if (heatResult.source === 'real' && summary) {
             const total = summary.total_incidents?.toLocaleString('pt-BR') ?? heatResult.count;
@@ -102,17 +108,11 @@ export class App {
             const furto = (types.furto || 0).toLocaleString('pt-BR');
             const roubo = (types.roubo || 0).toLocaleString('pt-BR');
             const dateMax = summary.date_range?.max?.slice(0, 10) || '';
-            ctx.textContent = `SSP-SP · ${total} BOs georreferenciados (furto: ${furto} | roubo: ${roubo})${dateMax ? ` · até ${dateMax}` : ''} · incidência observada, não RES 160`;
-            this.alertSystem?.showToast?.(`Dataset real carregado: ${total} ocorrências`, 'success');
+            ctx.textContent = `SSP-SP · ${slice} · base total: ${total} BOs georreferenciados (furto: ${furto} | roubo: ${roubo})${dateMax ? ` · até ${dateMax}` : ''} · incidência observada, não RES 160`;
         } else if (heatResult.source === 'real') {
-            ctx.textContent = `Heatmap real carregado · ${heatResult.count.toLocaleString('pt-BR')} pontos KDE`;
+            ctx.textContent = `SSP-SP · ${slice} · ${heatResult.count.toLocaleString('pt-BR')} pontos KDE`;
         } else {
             ctx.textContent = 'Dataset real indisponível — exibindo simulação local';
-            console.info(
-                'Para carregar dados reais:\n' +
-                '  python scripts/run_pipeline.py\n' +
-                '  python3 -m http.server 8000'
-            );
         }
     }
 }
